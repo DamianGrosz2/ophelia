@@ -1,0 +1,236 @@
+{
+    "procedures": {
+        "pad_angioplasty": {
+            "patientId": "PAD-001",
+            "procedureType": "Endovascular PAD Angioplasty",
+            "scheduledTime": "2025-01-10T09:00:00Z",
+            "estimatedDuration": 120,
+            "room": "OR-C3",
+            "equipment": "Mobile C-arm Siemens Cios Alpha",
+            "operator": "Dr. Sarah Chen",
+            "patient": {
+                "demographics": {
+                    "name": "Robert Martinez",
+                    "mrn": "MRN-789456",
+                    "age": 68,
+                    "gender": "Male",
+                    "bmi": 28.5,
+                    "weight": 85,
+                    "height": 175
+                },
+                "medicalHistory": {
+                    "previousPAD": true,
+                    "previousInterventions": [
+                        "Left SFA angioplasty 2023"
+                    ],
+                    "diabetes": "Type 2, well-controlled",
+                    "smokingHistory": "Former smoker, quit 2020",
+                    "comorbidities": [
+                        "Hypertension",
+                        "Hyperlipidemia",
+                        "CAD"
+                    ]
+                },
+                "imaging": {
+                    "abi": {
+                        "right": 0.55,
+                        "left": 0.48,
+                        "date": "2025-01-08"
+                    },
+                    "ctAngiography": {
+                        "findings": "Severe stenosis right SFA mid-segment, 85% occlusion",
+                        "lesionLength": "12 cm",
+                        "vesselDiameter": "5.2 mm",
+                        "date": "2025-01-05"
+                    }
+                },
+                "labs": {
+                    "creatinine": {
+                        "value": 1.2,
+                        "unit": "mg/dL",
+                        "date": "2025-01-09",
+                        "egfr": 58
+                    },
+                    "platelets": {
+                        "value": 245000,
+                        "unit": "/μL",
+                        "date": "2025-01-09"
+                    },
+                    "inr": {
+                        "value": 1.1,
+                        "date": "2025-01-09"
+                    },
+                    "hemoglobin": {
+                        "value": 13.2,
+                        "unit": "g/dL",
+                        "date": "2025-01-09"
+                    }
+                },
+                "medications": [
+                    "Clopidogrel 75mg daily",
+                    "Aspirin 81mg daily",
+                    "Atorvastatin 40mg daily",
+                    "Metformin 1000mg BID"
+                ],
+                "allergies": [
+                    "Iodine contrast - rash",
+                    "Penicillin - hives"
+                ]
+            },
+            "procedurePlan": {
+                "accessSite": "Right common femoral artery",
+                "targetVessel": "Right superficial femoral artery",
+                "plannedIntervention": "Balloon angioplasty with provisional stenting",
+                "deviceSelection": {
+                    "balloon": "6mm x 120mm drug-coated balloon",
+                    "guidewire": "0.018\" hydrophilic wire",
+                    "sheath": "6Fr arterial sheath"
+                }
+            },
+            "intraopData": {
+                "vitals": {
+                    "bloodPressure": "142/88",
+                    "heartRate": 78,
+                    "o2Sat": 98
+                },
+                "contrastUsed": 45,
+                "maxContrast": 75,
+                "fluoroscopyTime": 12.5,
+                "radiationDose": 245
+            }
+        },
+        "ep_ablation": {
+            "patientId": "EP-002",
+            "procedureType": "Atrial Fibrillation Ablation",
+            "scheduledTime": "2025-01-10T13:30:00Z",
+            "estimatedDuration": 180,
+            "room": "EP-Lab-1",
+            "equipment": "CARTO 3 Mapping System",
+            "operator": "Dr. Michael Kim",
+            "patient": {
+                "demographics": {
+                    "name": "Linda Thompson",
+                    "mrn": "MRN-654321",
+                    "age": 62,
+                    "gender": "Female",
+                    "weight": 72,
+                    "height": 165
+                },
+                "cardiacHistory": {
+                    "arrhythmia": "Persistent atrial fibrillation",
+                    "duration": "18 months",
+                    "frequency": "Daily episodes",
+                    "previousAblations": [],
+                    "devices": "None",
+                    "heartFailure": "None"
+                },
+                "imaging": {
+                    "echocardiogram": {
+                        "leftAtriumSize": "4.8 cm",
+                        "ejectionFraction": "60%",
+                        "date": "2025-01-07"
+                    },
+                    "cardiacCT": {
+                        "pulmonaryVeins": "4 standard veins identified",
+                        "leftAtriumVolume": "98 mL",
+                        "date": "2025-01-06"
+                    }
+                },
+                "labs": {
+                    "potassium": {
+                        "value": 4.2,
+                        "unit": "mEq/L",
+                        "date": "2025-01-09"
+                    },
+                    "magnesium": {
+                        "value": 2.1,
+                        "unit": "mg/dL",
+                        "date": "2025-01-09"
+                    },
+                    "tsh": {
+                        "value": 2.4,
+                        "unit": "mIU/L",
+                        "date": "2025-01-05"
+                    },
+                    "inr": {
+                        "value": 2.3,
+                        "date": "2025-01-09"
+                    },
+                    "creatinine": {
+                        "value": 0.9,
+                        "unit": "mg/dL",
+                        "date": "2025-01-09"
+                    }
+                },
+                "medications": [
+                    "Warfarin 5mg daily",
+                    "Metoprolol 50mg BID",
+                    "Flecainide 100mg BID"
+                ],
+                "ecg": {
+                    "rhythm": "Atrial fibrillation",
+                    "rate": "110-150 bpm",
+                    "date": "2025-01-09"
+                }
+            },
+            "procedurePlan": {
+                "approach": "Transseptal puncture",
+                "targets": [
+                    "Pulmonary vein isolation",
+                    "Posterior wall isolation",
+                    "Roof line"
+                ],
+                "catheters": [
+                    "ThermoCool SmartTouch SF 3.5mm",
+                    "Lasso Nav 2515",
+                    "BRK Transseptal needle"
+                ]
+            },
+            "intraopData": {
+                "vitals": {
+                    "bloodPressure": "125/75",
+                    "heartRate": 95,
+                    "temperature": 36.8
+                },
+                "mapping": {
+                    "leftAtriumGeometry": "Complete",
+                    "pulmonaryVeins": "4 veins mapped",
+                    "voltage": "Normal endocardium"
+                },
+                "ablation": {
+                    "powerSetting": 35,
+                    "targetTemperature": 43,
+                    "contactForce": "10-20g",
+                    "totalLesions": 0
+                }
+            }
+        }
+    },
+    "orSchedule": {
+        "date": "2025-01-10",
+        "rooms": {
+            "OR-C3": {
+                "procedures": [
+                    {
+                        "time": "09:00",
+                        "patient": "Robert Martinez",
+                        "procedure": "PAD Angioplasty",
+                        "surgeon": "Dr. Sarah Chen",
+                        "status": "In Progress"
+                    }
+                ]
+            },
+            "EP-Lab-1": {
+                "procedures": [
+                    {
+                        "time": "13:30",
+                        "patient": "Linda Thompson",
+                        "procedure": "AF Ablation",
+                        "surgeon": "Dr. Michael Kim",
+                        "status": "Scheduled"
+                    }
+                ]
+            }
+        }
+    }
+}
