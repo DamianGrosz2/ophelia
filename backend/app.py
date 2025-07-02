@@ -21,16 +21,18 @@ from io import BytesIO
 # LLM options
 import google.generativeai as genai
 
-# Text-to-Speech and Speech-to-Text (OpenAI APIs)
+# Text-to-Speech and Speech-to-Text via OpenAI APIs
 from openai import OpenAI
 
-# Optional imports for local fallbacks (Railway-friendly)
+# Optional Whisper import for local STT (not required on Railway)
 try:
     import whisper
     WHISPER_AVAILABLE = True
 except ImportError:
     WHISPER_AVAILABLE = False
-    logger.warning("Whisper not available - using OpenAI API")
+    whisper = None  # type: ignore
+    from loguru import logger
+    logger.warning("Whisper package not found – falling back to OpenAI Whisper API")
 
 # Logging
 from loguru import logger
