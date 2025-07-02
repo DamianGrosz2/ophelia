@@ -2,9 +2,60 @@
 import Chart from 'chart.js/auto';
 import 'chartjs-adapter-date-fns';
 
+import * as cornerstone from 'cornerstone-core';
+import * as cornerstoneMath from 'cornerstone-math';
+import Hammer from 'hammerjs';
+import * as cornerstoneTools from 'cornerstone-tools';
+import * as cornerstoneWebImageLoader from 'cornerstone-web-image-loader';
+import * as dicomParser from 'dicom-parser';
+import * as cornerstoneWADOImageLoader from 'cornerstone-wado-image-loader';
+
 // Import DicomViewer and VtkViewer
 import { DicomViewer } from './dicom-viewer.js';
 import { VtkViewer } from './vtk-viewer.js';
+
+/**
+ * Initializes all Cornerstone libraries. This should be called once when the app starts.
+ */
+function initializeCornerstone()
+{
+    // Link the external dependencies to the cornerstone-tools and cornerstone-web-image-loader libraries
+    cornerstoneTools.external.cornerstone = cornerstone;
+    cornerstoneTools.external.cornerstoneMath = cornerstoneMath;
+    cornerstoneWebImageLoader.external.cornerstone = cornerstone;
+    cornerstoneWebImageLoader.external.dicomParser = dicomParser;
+    // Register HammerJS for gesture and pointer event support
+    cornerstoneTools.external.Hammer = Hammer;
+
+    // Link externals for WADO image loader
+    cornerstoneWADOImageLoader.external.cornerstone = cornerstone;
+    cornerstoneWADOImageLoader.external.dicomParser = dicomParser;
+
+    // Initialize cornerstone-tools with global configuration
+    cornerstoneTools.init({
+        showSVGCursors: true,
+    });
+
+    // Configure the web image loader with global settings
+    cornerstoneWebImageLoader.configure({
+        useWebWorkers: false, // Set to true for better performance in production
+        beforeSend: (xhr) =>
+        {
+            // This is a good place to add authorization headers if needed
+        },
+    });
+
+    // Configure WADO Image Loader (disable web workers for simple dev setup)
+    cornerstoneWADOImageLoader.configure({
+        useWebWorkers: false,
+        decodeConfig: {
+            convertFloatPixelDataToInt: false,
+            use16BitDataType: true
+        }
+    });
+
+    console.log('Cornerstone libraries initialized globally from main.js.');
+}
 
 class ORVoiceAssistant
 {
@@ -17,6 +68,8 @@ class ORVoiceAssistant
         this.vitalsChart = null;
         this.vtkViewer = null;
         this.dicomViewer = null;
+
+        initializeCornerstone(); // Initialize Cornerstone libraries globally
 
         this.initializeElements();
         this.setupEventListeners();
@@ -274,8 +327,17 @@ class ORVoiceAssistant
         {
             if (transcript.toLowerCase().includes('view') || transcript.toLowerCase().includes('3d'))
             {
-                response = "Resetting 3D view orientation.";
-                this.vtkViewer?.resetVtkView();
+                if (transcript.toLowerCase().includes('reset'))
+                {
+                    response = "Resetting 3D view orientation.";
+                    this.vtkViewer?.resetVtkView();
+                }
+                else
+                {
+                    const direction = transcript.toLowerCase().includes('right') ? 'right' : 'left';
+                    response = `Rotating 3D view ${direction}.`;
+                    this.vtkViewer?.rotateVtkView(direction);
+                }
             }
         } else if (transcript.toLowerCase().includes('zoom'))
         {
@@ -410,6 +472,13 @@ class ORVoiceAssistant
                 const factor = command.data?.zoom_level || 1.5;
                 this.vtkViewer?.zoomVtkView(factor);
                 this.showAlert(`Zooming 3D view by ${factor}x`, 'info');
+            }
+            else if (command.action === 'rotate' && command.target === '3d')
+            {
+                const direction = command.data?.direction || 'left';
+                const angle = command.data?.angle || 15;
+                this.vtkViewer?.rotateVtkView(direction, angle);
+                this.showAlert(`Rotating 3D view ${direction}`, 'info');
             }
             else if (command.action === 'reset' && command.target === '3d')
             {
@@ -789,11 +858,23 @@ class ORVoiceAssistant
 
     initializeDicomViewer()
     {
-        // Initialize DICOM viewer using the separate DicomViewer class
-        this.dicomViewer = new DicomViewer(
-            document.querySelector('.dicom-viewer'),
-            (message, level) => this.showAlert(message, level)
-        );
+        // Find the panel that is the main container for the DICOM viewer.
+        const dicomPanelContainer = document.getElementById('panel-5');
+
+        // Make sure the container exists before initializing the viewer.
+        if (dicomPanelContainer)
+        {
+            // Pass the entire panel as the container.
+            // The DicomViewer class will find the ".dicom-viewer" element inside it.
+            this.dicomViewer = new DicomViewer(
+                dicomPanelContainer,
+                (message, level) => this.showAlert(message, level)
+            );
+        } else
+        {
+            console.error("Fatal Error: The DICOM viewer panel ('#panel-5') was not found in the DOM.");
+            this.showAlert("Could not initialize DICOM viewer: container not found.", "error");
+        }
     }
 
     // Voice command integration methods for DICOM viewer
@@ -974,10 +1055,27 @@ window.togglePanel = function (panelId)
     }
 };
 
-// Initialize the application when DOM is loaded
 document.addEventListener('DOMContentLoaded', () =>
 {
+    // 1. Initialize Cornerstone libraries FIRST
+    try
+    {
+        initializeCornerstone();
+    } catch (error)
+    {
+        console.error("FATAL: Could not initialize Cornerstone!", error);
+        // Display an error message to the user if this fails
+        const appContainer = document.querySelector('.main-container');
+        if (appContainer)
+        {
+            appContainer.innerHTML = `<div class="error-message">Failed to load medical imaging libraries. Please refresh the page.</div>`;
+        }
+        return;
+    }
+
+    // 2. Now it's safe to create the main application and its viewers
     new ORVoiceAssistant();
-    // Initialize the grid layout
+
+    // 3. Initialize the grid layout
     updateGridLayout();
-}); 
+});

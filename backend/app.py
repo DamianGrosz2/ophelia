@@ -317,12 +317,17 @@ def parse_command(transcript: str, procedure_type: str) -> Dict[str, Any]:
                 "target": "aorta",
                 "data": {"zoom_level": 2.0}
             })
+        # 3D model zoom (in / out / factor)
         if "3d" in transcript_lower or "model" in transcript_lower:
-            zoom_level = 2.0
+            # Default zoom in factor
+            zoom_level = 1.5
             if "2x" in transcript_lower:
                 zoom_level = 2.0
             elif "3x" in transcript_lower:
                 zoom_level = 3.0
+            elif "zoom out" in transcript_lower or "out" in transcript_lower:
+                # Factor <1 zooms out. Choose reciprocal of default 1.5
+                zoom_level = 1/1.5
             display_commands.append({
                 "action": "zoom",
                 "target": "3d",
@@ -346,6 +351,16 @@ def parse_command(transcript: str, procedure_type: str) -> Dict[str, Any]:
         display_commands.append({
             "action": "previous", 
             "target": "dicom"
+        })
+    
+    # New: rotate 3D model left / right
+    if "rotate" in transcript_lower and ("view" in transcript_lower or "3d" in transcript_lower or "model" in transcript_lower):
+        direction = "left" if "left" in transcript_lower else "right" if "right" in transcript_lower else "left"
+        angle = 15  # degrees per command
+        display_commands.append({
+            "action": "rotate",
+            "target": "3d",
+            "data": {"direction": direction, "angle": angle}
         })
     
     # Determine command type
@@ -393,8 +408,10 @@ def generate_rule_based_response(query: str) -> str:
             return "Loading VTK file for 3D visualization. The model will appear in the 3D viewer panel."
         elif "zoom" in query_lower:
             return "Zooming 3D model view. Use voice commands to control the visualization."
-        elif "reset" in query_lower or "rotate" in query_lower:
+        elif "reset" in query_lower:
             return "Resetting 3D view orientation to default position."
+        elif "rotate" in query_lower:
+            return "Rotating 3D model view. Use voice commands to control the orientation."
     
     # DICOM medical imaging queries
     if "dicom" in query_lower or "scan" in query_lower or ("image" in query_lower and any(word in query_lower for word in ["medical", "ct", "mri", "xray", "x-ray"])):
