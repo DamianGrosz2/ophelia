@@ -20,15 +20,17 @@ from io import BytesIO
 
 # LLM options
 import google.generativeai as genai
-import ollama
-from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
-import torch
 
-# Text-to-Speech
+# Text-to-Speech and Speech-to-Text (OpenAI APIs)
 from openai import OpenAI
 
-# Whisper for speech-to-text
-import whisper
+# Optional imports for local fallbacks (Railway-friendly)
+try:
+    import whisper
+    WHISPER_AVAILABLE = True
+except ImportError:
+    WHISPER_AVAILABLE = False
+    logger.warning("Whisper not available - using OpenAI API")
 
 # Logging
 from loguru import logger
@@ -64,10 +66,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Global variables for models
+# Global variables for models (Railway-optimized)
 whisper_model = None
-llm_pipeline = None
-tokenizer = None
 gemini_model = None
 openai_client = None
 mock_data = None
@@ -102,21 +102,34 @@ def load_mock_data():
         logger.error(f"Failed to load mock data: {e}")
         mock_data = {}
 
-# Initialize Whisper model
+# Initialize Whisper (prefer OpenAI API, fallback to local)
 def initialize_whisper():
     global whisper_model
-    try:
-        whisper_model = whisper.load_model("base")
-        logger.info("Whisper model loaded successfully")
-    except Exception as e:
-        logger.error(f"Failed to load Whisper model: {e}")
+    
+    # Check if OpenAI API is available (preferred for cloud deployment)
+    openai_key = os.getenv("OPENAI_API_KEY")
+    if openai_key and openai_key != "your_openai_api_key_here":
+        logger.info("Using OpenAI Whisper API for speech-to-text")
+        whisper_model = "openai_api"
+        return
+    
+    # Fallback to local Whisper if available
+    if WHISPER_AVAILABLE:
+        try:
+            whisper_model = whisper.load_model("base")
+            logger.info("Local Whisper model loaded successfully")
+        except Exception as e:
+            logger.error(f"Failed to load local Whisper model: {e}")
+            whisper_model = None
+    else:
+        logger.warning("No speech-to-text available - Whisper disabled")
         whisper_model = None
 
-# Initialize LLM (Gemini as primary, Ollama as backup)
+# Initialize LLM (Gemini cloud API only - Railway optimized)
 def initialize_llm():
-    global gemini_model, llm_pipeline, tokenizer
+    global gemini_model
     
-    # Try Gemini first (best option)
+    # Try Gemini (cloud API - preferred for production)
     try:
         # Force reload environment variables
         from dotenv import load_dotenv
@@ -137,36 +150,9 @@ def initialize_llm():
             logger.info("Gemini model initialized successfully")
             return
         else:
-            logger.warning("GEMINI_API_KEY not found in environment variables")
+            logger.warning("GEMINI_API_KEY not found - using rule-based fallback")
     except Exception as e:
-        logger.warning(f"Gemini not available: {e}")
-    
-    # Try Ollama as backup
-    try:
-        models = ollama.list()
-        if models:
-            logger.info("Ollama is available - using local LLM")
-            return
-    except Exception as e:
-        logger.warning(f"Ollama not available: {e}")
-    
-    # Fallback to HuggingFace transformers
-    try:
-        model_name = "microsoft/DialoGPT-medium"
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
-        model = AutoModelForCausalLM.from_pretrained(model_name)
-        
-        llm_pipeline = pipeline(
-            "text-generation",
-            model=model,
-            tokenizer=tokenizer,
-            max_length=512,
-            do_sample=True,
-            temperature=0.7
-        )
-        logger.info("HuggingFace model loaded successfully")
-    except Exception as e:
-        logger.error(f"Failed to load any LLM: {e}")
+        logger.warning(f"Gemini not available: {e} - using rule-based fallback")
 
 # Initialize OpenAI TTS
 def initialize_tts():
@@ -376,7 +362,7 @@ def parse_command(transcript: str, procedure_type: str) -> Dict[str, Any]:
 # Get LLM response using available model
 async def get_llm_response(prompt: str) -> str:
     try:
-        # Try Gemini first
+        # Try Gemini (cloud API)
         if gemini_model:
             try:
                 response = gemini_model.generate_content(prompt)
@@ -384,28 +370,8 @@ async def get_llm_response(prompt: str) -> str:
             except Exception as e:
                 logger.warning(f"Gemini error: {e}")
         
-        # Try Ollama as backup
-        try:
-            response = ollama.generate(
-                model="llama2",  # or another available model
-                prompt=prompt,
-                options={"temperature": 0.3, "max_tokens": 300}
-            )
-            return response['response']
-        except:
-            pass
-        
-        # Fallback to HuggingFace
-        if llm_pipeline:
-            response = llm_pipeline(
-                prompt,
-                max_length=len(prompt.split()) + 100,
-                num_return_sequences=1,
-                pad_token_id=tokenizer.eos_token_id
-            )
-            return response[0]['generated_text'][len(prompt):].strip()
-        
-        # Ultimate fallback - rule-based responses
+        # Fallback to rule-based responses (no local ML models for Railway)
+        logger.info("Using rule-based fallback response")
         return generate_rule_based_response(prompt)
         
     except Exception as e:
@@ -491,16 +457,16 @@ async def health_check():
         "status": "healthy",
         "whisper_loaded": whisper_model is not None,
         "gemini_loaded": gemini_model is not None,
-        "llm_loaded": llm_pipeline is not None or gemini_model is not None,
+        "llm_loaded": gemini_model is not None,
         "mock_data_loaded": mock_data is not None
     }
 
 @app.post("/transcribe", response_model=VoiceResponse)
 async def transcribe_audio(audio: UploadFile = File(...), procedure_type: str = "pad_angioplasty"):
-    """Transcribe audio file using Whisper and return transcript"""
+    """Transcribe audio file using OpenAI Whisper API (preferred) or local Whisper"""
     try:
         if not whisper_model:
-            raise Exception("Whisper model not loaded")
+            raise Exception("Whisper not available")
         
         # Log the received file info
         logger.info(f"Received audio file: {audio.filename}, content_type: {audio.content_type}")
@@ -508,33 +474,73 @@ async def transcribe_audio(audio: UploadFile = File(...), procedure_type: str = 
         # Read the uploaded audio file
         audio_bytes = await audio.read()
         
-        # Create a temporary file to save the audio
-        import tempfile
-        import os
+        # Use OpenAI Whisper API if available (preferred for cloud)
+        if whisper_model == "openai_api" and openai_client:
+            try:
+                # Create a temporary file for OpenAI API
+                import tempfile
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
+                    temp_file.write(audio_bytes)
+                    temp_file_path = temp_file.name
+                
+                try:
+                    with open(temp_file_path, "rb") as audio_file:
+                        transcript = openai_client.audio.transcriptions.create(
+                            model="whisper-1",
+                            file=audio_file
+                        )
+                    
+                    transcript_text = transcript.text.strip()
+                    print(f"🎤 TRANSCRIBED (OpenAI): {transcript_text}")
+                    logger.info(f"OpenAI transcribed text: {transcript_text}")
+                    
+                    return VoiceResponse(
+                        transcript=transcript_text,
+                        response="Audio transcribed successfully",
+                        alert_level="info"
+                    )
+                    
+                finally:
+                    # Clean up the temporary file
+                    import os
+                    if os.path.exists(temp_file_path):
+                        os.unlink(temp_file_path)
+                        
+            except Exception as e:
+                logger.error(f"OpenAI Whisper API error: {e}")
+                # Continue to local fallback
         
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
-            temp_file.write(audio_bytes)
-            temp_file_path = temp_file.name
+        # Local Whisper fallback (if available)
+        if WHISPER_AVAILABLE and whisper_model != "openai_api":
+            import tempfile
+            import os
+            
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
+                temp_file.write(audio_bytes)
+                temp_file_path = temp_file.name
+            
+            try:
+                # Transcribe audio using local Whisper
+                result = whisper_model.transcribe(temp_file_path)
+                transcript = result["text"].strip()
+                
+                # Print the transcribed text
+                print(f"🎤 TRANSCRIBED (Local): {transcript}")
+                logger.info(f"Local transcribed text: {transcript}")
+                
+                return VoiceResponse(
+                    transcript=transcript,
+                    response="Audio transcribed successfully",
+                    alert_level="info"
+                )
+                
+            finally:
+                # Clean up the temporary file
+                if os.path.exists(temp_file_path):
+                    os.unlink(temp_file_path)
         
-        try:
-            # Transcribe audio using Whisper
-            result = whisper_model.transcribe(temp_file_path)
-            transcript = result["text"].strip()
-            
-            # Print the transcribed text
-            print(f"🎤 TRANSCRIBED: {transcript}")
-            logger.info(f"Transcribed text: {transcript}")
-            
-            return VoiceResponse(
-                transcript=transcript,
-                response="Audio transcribed successfully",
-                alert_level="info"
-            )
-            
-        finally:
-            # Clean up the temporary file
-            if os.path.exists(temp_file_path):
-                os.unlink(temp_file_path)
+        # If we get here, no transcription method worked
+        raise Exception("No transcription method available")
         
     except Exception as e:
         logger.error(f"Transcription error: {e}")
