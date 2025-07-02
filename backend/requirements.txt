@@ -1,50 +1,32 @@
-# Core FastAPI dependencies
+# Core FastAPI dependencies - Railway optimized
 fastapi==0.104.1
-uvicorn==0.24.0
+uvicorn[standard]==0.24.0
 python-multipart==0.0.6
 python-dotenv==1.0.0
 
-# Audio processing
-soundfile==0.12.1
-numpy==1.24.3
-openai-whisper==20231117
-
-# LLM - Google Gemini API
+# LLM - Google Gemini API (primary)
 google-generativeai==0.3.2
 
 # Text-to-Speech - OpenAI TTS
 openai==1.3.7
 
-# Alternative: Ollama for local LLMs (backup)
-ollama==0.1.7
-
-# Transformers (backup, can be removed if only using Gemini)
-transformers==4.35.2
-torch==2.1.1
-accelerate==0.24.1
-sentence-transformers==2.2.2
-
 # HTTP client for API calls
 httpx==0.25.2
 requests==2.31.0
 
-# Database for patient data simulation
-sqlalchemy==2.0.23
+# Audio processing (lightweight)
+pydub==0.25.1
+soundfile==0.12.1
+numpy==1.24.3
 
 # JSON handling and validation
 pydantic==2.5.0
-jsonschema==4.20.0
-
-# CORS support (built into FastAPI)
-
-# Audio format conversion
-pydub==0.25.1
-
-# Medical data handling
-hl7==0.4.5
 
 # Date/time handling
 python-dateutil==2.8.2
 
 # Logging
-loguru==0.7.2 
+loguru==0.7.2
+
+# Health check endpoint support
+psutil==5.9.6 
