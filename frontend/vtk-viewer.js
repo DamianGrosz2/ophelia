@@ -206,6 +206,19 @@ export class VtkViewer
         }
     }
 
+    rotateVtkView(direction = 'left', angle = 15)
+    {
+        // Rotate the camera around its focal point. Positive angle for left (CCW), negative for right (CW)
+        if (this.vtkViewer)
+        {
+            const renderer = this.vtkViewer.getRenderer();
+            const camera = renderer.getActiveCamera();
+            const delta = direction === 'right' ? -Math.abs(angle) : Math.abs(angle);
+            camera.azimuth(delta);
+            this.vtkViewer.getRenderWindow().render();
+        }
+    }
+
     resetVtkCamera()
     {
         if (this.vtkViewer)
