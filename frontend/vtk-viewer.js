@@ -7,6 +7,9 @@ import vtkXMLPolyDataReader from '@kitware/vtk.js/IO/XML/XMLPolyDataReader';
 import vtkPolyDataReader from '@kitware/vtk.js/IO/Legacy/PolyDataReader';
 import vtkHttpDataAccessHelper from '@kitware/vtk.js/IO/Core/DataAccessHelper/HttpDataAccessHelper';
 
+// API base URL provided by main.js or env
+const API_BASE_URL = window.API_BASE_URL || (import.meta.env?.VITE_API_URL || 'http://localhost:8000');
+
 export class VtkViewer
 {
     constructor(container, onAlert = null)
@@ -112,7 +115,7 @@ export class VtkViewer
 
         try
         {
-            const url = `http://localhost:8000/vtk/${filename}`;
+            const url = `${API_BASE_URL}/vtk/${filename}`;
             console.log(`Loading VTK file from: ${url}`);
 
             // Load the data
@@ -237,7 +240,7 @@ export class VtkViewer
     {
         try
         {
-            const response = await fetch('http://localhost:8000/vtk');
+            const response = await fetch(`${API_BASE_URL}/vtk`);
             if (response.ok)
             {
                 const data = await response.json();

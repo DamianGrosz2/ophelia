@@ -14,6 +14,10 @@ import * as cornerstoneWADOImageLoader from 'cornerstone-wado-image-loader';
 import { DicomViewer } from './dicom-viewer.js';
 import { VtkViewer } from './vtk-viewer.js';
 
+// Backend API base URL
+export const API_BASE_URL = window.API_BASE_URL || (import.meta.env.VITE_API_URL || 'http://localhost:8000');
+window.API_BASE_URL = API_BASE_URL;
+
 /**
  * Initializes all Cornerstone libraries. This should be called once when the app starts.
  */
@@ -217,7 +221,7 @@ class ORVoiceAssistant
             formData.append('procedure_type', this.currentProcedure);
 
             // First transcribe the audio
-            const transcribeResponse = await fetch('http://localhost:8000/transcribe', {
+            const transcribeResponse = await fetch(`${API_BASE_URL}/transcribe`, {
                 method: 'POST',
                 body: formData
             });
@@ -248,7 +252,7 @@ class ORVoiceAssistant
     {
         try
         {
-            const response = await fetch('http://localhost:8000/ask', {
+            const response = await fetch(`${API_BASE_URL}/ask`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -508,7 +512,7 @@ class ORVoiceAssistant
         console.log('Playing OpenAI TTS audio:', audioUrl);
 
         // Use the hidden audio element from HTML
-        this.ttsAudio.src = `http://localhost:8000${audioUrl}`;
+        this.ttsAudio.src = `${API_BASE_URL}${audioUrl}`;
         this.ttsAudio.play().catch(error =>
         {
             console.error('Error playing generated audio:', error);
@@ -615,7 +619,7 @@ class ORVoiceAssistant
     {
         try
         {
-            const response = await fetch(`http://localhost:8000/procedures/${this.currentProcedure}`);
+            const response = await fetch(`${API_BASE_URL}/procedures/${this.currentProcedure}`);
             if (response.ok)
             {
                 const data = await response.json();
