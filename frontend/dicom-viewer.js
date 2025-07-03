@@ -5,6 +5,9 @@ import * as cornerstoneTools from 'cornerstone-tools';
 import * as cornerstoneWebImageLoader from 'cornerstone-web-image-loader';
 import * as dicomParser from 'dicom-parser';
 
+// API base URL provided by main.js or env
+const API_BASE_URL = window.API_BASE_URL || (import.meta.env?.VITE_API_URL || 'http://localhost:8000');
+
 export class DicomViewer
 {
     constructor(container, onAlert = null)
@@ -133,7 +136,7 @@ export class DicomViewer
         try
         {
             // Fetch the list of filenames for the series from the server
-            const response = await fetch(`http://localhost:8000/dicom/series/${seriesId}`);
+            const response = await fetch(`${API_BASE_URL}/dicom/series/${seriesId}`);
             if (!response.ok)
             {
                 throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
@@ -147,7 +150,7 @@ export class DicomViewer
             }
 
             // Create an array of Cornerstone imageIds
-            this.imageIds = files.map(filename => `wadouri:http://localhost:8000/dicom/file/${filename}`);
+            this.imageIds = files.map(filename => `wadouri:${API_BASE_URL}/dicom/file/${filename}`);
 
             // --- Load and Display the Image Stack ---
             // 1. Display the first image in the series
@@ -244,7 +247,7 @@ export class DicomViewer
     {
         try
         {
-            const response = await fetch('http://localhost:8000/dicom');
+            const response = await fetch(`${API_BASE_URL}/dicom`);
             if (!response.ok) throw new Error('Failed to fetch DICOM series list.');
 
             const data = await response.json();
