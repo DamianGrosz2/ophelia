@@ -100,97 +100,193 @@
             }
         },
         "ep_ablation": {
-            "patientId": "EP-002",
+            "patientId": "PAD-2025-001",
             "procedureType": "Atrial Fibrillation Ablation",
-            "scheduledTime": "2025-01-10T13:30:00Z",
+            "scheduledTime": "2025-06-26T13:30:00Z",
             "estimatedDuration": 180,
             "room": "EP-Lab-1",
             "equipment": "CARTO 3 Mapping System",
-            "operator": "Dr. Michael Kim",
+            "operator": "Dr. K. Berger",
             "patient": {
                 "demographics": {
-                    "name": "Linda Thompson",
-                    "mrn": "MRN-654321",
-                    "age": 62,
-                    "gender": "Female",
-                    "weight": 72,
-                    "height": 165
+                    "name": "Peter Schneider",
+                    "mrn": "PAD-2025-001",
+                    "age": 69,
+                    "gender": "Male",
+                    "weight": 85,
+                    "height": 175,
+                    "bmi": 27.8,
+                    "address": "Hauptstraße 5, 93059 Regensburg",
+                    "phone": "0151-9876543",
+                    "primaryPhysician": "Dr. M. Fischer, Praxis Regensburg"
                 },
                 "cardiacHistory": {
-                    "arrhythmia": "Persistent atrial fibrillation",
-                    "duration": "18 months",
-                    "frequency": "Daily episodes",
+                    "arrhythmia": "Persistent atrial fibrillation with rapid ventricular response",
+                    "duration": "6 months",
+                    "frequency": "Continuous since 3 months",
+                    "episodeDuration": "Persistent",
+                    "symptoms": "Palpitations, dyspnea on exertion, fatigue, reduced exercise tolerance",
                     "previousAblations": [],
                     "devices": "None",
-                    "heartFailure": "None"
+                    "heartFailure": "Mild (NYHA II)",
+                    "coronaryArteryDisease": "Post-MI 2017 with LAD stent",
+                    "stroke": "None"
+                },
+                "medicalHistory": {
+                    "hypertension": "10 years, well controlled with Ramipril",
+                    "diabetes": "Type 2, 15 years, HbA1c 7.8% (suboptimal control)",
+                    "thyroidDisease": "None",
+                    "sleepApnea": "Not excluded",
+                    "previousSurgeries": [
+                        "Appendectomy 1975",
+                        "LAD stent implantation 2017"
+                    ],
+                    "peripheralArteryDisease": "Stage IV Fontaine, severe stenoses right SFA and popliteal",
+                    "dyslipidemia": "5 years, on statin therapy"
                 },
                 "imaging": {
                     "echocardiogram": {
-                        "leftAtriumSize": "4.8 cm",
-                        "ejectionFraction": "60%",
-                        "date": "2025-01-07"
+                        "leftAtriumSize": "4.8 cm (moderately enlarged)",
+                        "ejectionFraction": "50%",
+                        "diastolicDysfunction": "Grade II",
+                        "valvularDisease": "Mild mitral regurgitation",
+                        "intracardiacThrombi": "None visible",
+                        "date": "2025-06-24"
                     },
                     "cardiacCT": {
-                        "pulmonaryVeins": "4 standard veins identified",
-                        "leftAtriumVolume": "98 mL",
-                        "date": "2025-01-06"
+                        "pulmonaryVeins": "Normal anatomy, 4 standard veins",
+                        "leftAtriumAnatomy": "Moderate enlargement, no thrombi",
+                        "date": "2025-06-23"
+                    },
+                    "holterMonitor": {
+                        "findings": "Persistent atrial fibrillation with heart rates 80-140 bpm",
+                        "bradycardia": "None",
+                        "otherArrhythmias": "Frequent VPCs",
+                        "date": "2025-06-20"
                     }
                 },
                 "labs": {
-                    "potassium": {
-                        "value": 4.2,
-                        "unit": "mEq/L",
-                        "date": "2025-01-09"
+                    "hemoglobin": {
+                        "value": 14.5,
+                        "unit": "g/dL",
+                        "date": "2025-06-25"
                     },
-                    "magnesium": {
-                        "value": 2.1,
-                        "unit": "mg/dL",
-                        "date": "2025-01-09"
+                    "platelets": {
+                        "value": 280,
+                        "unit": "G/L",
+                        "date": "2025-06-25"
                     },
-                    "tsh": {
-                        "value": 2.4,
-                        "unit": "mIU/L",
-                        "date": "2025-01-05"
+                    "leukocytes": {
+                        "value": 8.2,
+                        "unit": "G/L",
+                        "date": "2025-06-25"
                     },
                     "inr": {
-                        "value": 2.3,
-                        "date": "2025-01-09"
+                        "value": 2.2,
+                        "note": "On Warfarin, therapeutic range",
+                        "date": "2025-06-25"
                     },
                     "creatinine": {
-                        "value": 0.9,
+                        "value": 1.0,
                         "unit": "mg/dL",
-                        "date": "2025-01-09"
+                        "egfr": 75,
+                        "date": "2025-06-25"
+                    },
+                    "electrolytes": {
+                        "sodium": "Normal",
+                        "potassium": "Normal",
+                        "calcium": "Normal",
+                        "date": "2025-06-25"
+                    },
+                    "thyroidFunction": {
+                        "tsh": "Normal",
+                        "ft3": "Normal",
+                        "ft4": "Normal",
+                        "date": "2025-06-25"
+                    },
+                    "liverFunction": {
+                        "status": "Normal",
+                        "date": "2025-06-25"
+                    },
+                    "hba1c": {
+                        "value": 7.8,
+                        "unit": "%",
+                        "date": "2025-06-25"
+                    },
+                    "ldlCholesterol": {
+                        "value": 95,
+                        "unit": "mg/dL",
+                        "date": "2025-06-25"
+                    },
+                    "crp": {
+                        "value": 0.8,
+                        "unit": "mg/dL",
+                        "date": "2025-06-25"
                     }
                 },
                 "medications": [
-                    "Warfarin 5mg daily",
-                    "Metoprolol 50mg BID",
-                    "Flecainide 100mg BID"
+                    "Metoprolol succinate 95mg daily (rate control)",
+                    "Warfarin 5mg daily (anticoagulation)",
+                    "Ramipril 10mg daily (hypertension)",
+                    "Atorvastatin 20mg daily (dyslipidemia)",
+                    "ASS 100mg daily (CAD secondary prevention)",
+                    "Metformin 1000mg BID (diabetes)"
                 ],
-                "ecg": {
+                "allergies": [
+                    "No known drug allergies"
+                ],
+                "socialHistory": {
+                    "maritalStatus": "Widowed",
+                    "children": "1 adult child",
+                    "occupation": "Retired electrician",
+                    "smoking": "Active smoker (10-15 cigarettes/day, 50 pack years)",
+                    "alcohol": "Occasional",
+                    "exercise": "Limited due to PAD and dyspnea"
+                },
+                "familyHistory": {
+                    "mother": "Diabetes mellitus type 2",
+                    "father": "Myocardial infarction at age 60, smoker"
+                },
+                "riskScores": {
+                    "cha2ds2vasc": 5,
+                    "hasbled": 2,
+                    "anticoagulationIndicated": true,
+                    "bleedingRisk": "Moderate"
+                },
+                "currentVitals": {
+                    "bloodPressure": "135/85",
+                    "heartRate": 110,
                     "rhythm": "Atrial fibrillation",
-                    "rate": "110-150 bpm",
-                    "date": "2025-01-09"
+                    "temperature": 36.5,
+                    "respiratoryRate": 18,
+                    "oxygenSaturation": 96
                 }
             },
             "procedurePlan": {
                 "approach": "Transseptal puncture",
                 "targets": [
                     "Pulmonary vein isolation",
-                    "Posterior wall isolation",
-                    "Roof line"
+                    "Posterior wall isolation if needed"
                 ],
                 "catheters": [
                     "ThermoCool SmartTouch SF 3.5mm",
                     "Lasso Nav 2515",
                     "BRK Transseptal needle"
-                ]
+                ],
+                "anesthesia": "Conscious sedation with benzodiazepines",
+                "anticoagulation": "Continue Apixaban (last dose morning of procedure)",
+                "preOperativeRequirements": {
+                    "fasting": "6 hours pre-procedure",
+                    "ivAccess": "Required",
+                    "premedication": "Standard benzodiazepines per protocol"
+                }
             },
             "intraopData": {
                 "vitals": {
                     "bloodPressure": "125/75",
-                    "heartRate": 95,
-                    "temperature": 36.8
+                    "heartRate": 78,
+                    "temperature": 36.5,
+                    "oxygenSaturation": 98
                 },
                 "mapping": {
                     "leftAtriumGeometry": "Complete",
@@ -207,7 +303,7 @@
         }
     },
     "orSchedule": {
-        "date": "2025-01-10",
+        "date": "2025-06-24",
         "rooms": {
             "OR-C3": {
                 "procedures": [
@@ -224,9 +320,9 @@
                 "procedures": [
                     {
                         "time": "13:30",
-                        "patient": "Linda Thompson",
+                        "patient": "Peter Schneider",
                         "procedure": "AF Ablation",
-                        "surgeon": "Dr. Michael Kim",
+                        "surgeon": "Dr. K. Berger",
                         "status": "Scheduled"
                     }
                 ]

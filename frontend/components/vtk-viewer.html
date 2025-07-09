@@ -1,0 +1,32 @@
+<!-- VTK 3D Visualization Panel Component -->
+<div class="panel" id="panel-4">
+    <div class="panel-header">
+        <span>3D Visualization</span>
+        <button class="close-btn" onclick="closePanel('panel-4')" title="Close panel">×</button>
+    </div>
+    <div class="panel-content">
+        <!-- VTK Controls at the top -->
+        <div class="vtk-controls-top">
+            <div class="vtk-file-controls">
+                <label>VTK Files:</label>
+                <select class="vtk-select" id="vtk-file-select">
+                    <option value="">Select VTK file...</option>
+                </select>
+                <button class="vtk-action-btn load" id="load-vtk-btn">Load</button>
+                <button class="vtk-action-btn refresh" id="refresh-vtk-btn">Refresh</button>
+            </div>
+            <div class="vtk-navigation-controls">
+                <button class="vtk-nav-btn" id="rotate-vtk-btn">🔄 Reset View</button>
+                <button class="vtk-nav-btn" id="zoom-vtk-btn">🔍 Zoom</button>
+                <button class="vtk-nav-btn" id="pan-vtk-btn">📱 Reset Camera</button>
+            </div>
+        </div>
+
+        <!-- VTK Viewer Area -->
+        <div class="vtk-viewer">
+            <div class="vtk-info">
+                VTK Viewer Ready
+            </div>
+        </div>
+    </div>
+</div>

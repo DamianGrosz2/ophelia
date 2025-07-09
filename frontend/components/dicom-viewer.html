@@ -1,0 +1,32 @@
+<!-- DICOM Viewer Panel Component -->
+<div class="panel" id="panel-5">
+    <div class="panel-header">
+        <span>DICOM Viewer</span>
+        <button class="close-btn" onclick="closePanel('panel-5')" title="Close panel">×</button>
+    </div>
+    <div class="panel-content">
+        <!-- DICOM Controls at the top -->
+        <div class="dicom-controls-top">
+            <div class="dicom-file-controls">
+                <label>DICOM Series:</label>
+                <select class="dicom-select" id="dicom-series-select">
+                    <option value="">Select DICOM series...</option>
+                </select>
+                <button class="dicom-action-btn load" id="load-dicom-btn">Load</button>
+                <button class="dicom-action-btn refresh" id="refresh-dicom-btn">Refresh</button>
+            </div>
+            <div class="dicom-navigation-controls">
+                <button class="dicom-nav-btn" id="prev-dicom-btn">◀ Previous</button>
+                <button class="dicom-nav-btn" id="next-dicom-btn">Next ▶</button>
+                <button class="dicom-nav-btn reset" id="reset-dicom-btn">Reset View</button>
+            </div>
+        </div>
+
+        <!-- DICOM Viewer Area -->
+        <div class="dicom-viewer">
+            <div class="dicom-info">
+                DICOM Viewer Ready
+            </div>
+        </div>
+    </div>
+</div>
