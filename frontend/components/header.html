@@ -1,8 +1,14 @@
 <!-- Header Component -->
 <header class="header">
     <h1>Ophelia Voice Assistant</h1>
-    <div class="procedure-selector">
-        <button class="procedure-btn active" data-procedure="pad_angioplasty">PAD Angioplasty</button>
-        <button class="procedure-btn" data-procedure="ep_ablation">EP Ablation</button>
+    <div class="header-controls">
+        <div class="procedure-selector">
+            <button class="procedure-btn active" data-procedure="pad_angioplasty">PAD Angioplasty</button>
+            <button class="procedure-btn" data-procedure="ep_ablation">EP Ablation</button>
+        </div>
+        <button class="commands-btn" id="commands-btn" title="Show available voice commands">
+            <span class="commands-icon">📋</span>
+            Commands
+        </button>
     </div>
 </header>

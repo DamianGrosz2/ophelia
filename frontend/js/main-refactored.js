@@ -30,6 +30,7 @@ import { ChatInterface } from './chat-interface.js';
 import { ProcedureManager } from './procedure-manager.js';
 import { PatientDisplayRenderer } from './patient-display-renderer.js';
 import { VitalsChartManager } from './vitals-chart-manager.js';
+import { SurgicalGridManager } from './surgical-grid-manager.js';
 
 /**
  * Initialize Cornerstone libraries globally
@@ -134,12 +135,18 @@ class ORVoiceAssistant
         this.apiClient = new ApiClient();
         this.alertManager = new AlertManager();
 
+        // Create the surgical grid manager first
+        this.surgicalGrid = new SurgicalGridManager(this.alertManager);
+
         // Create UI components
         this.voiceRecorder = new VoiceRecorder(this.apiClient, this.alertManager);
         this.chatInterface = new ChatInterface(this.alertManager);
         this.procedureManager = new ProcedureManager(this.apiClient, this.alertManager);
         this.patientDisplay = new PatientDisplayRenderer(this.alertManager);
         this.vitalsChart = new VitalsChartManager(this.alertManager);
+
+        // Initialize command popup
+        this.initializeCommandPopup();
 
         console.log('All components initialized');
     }
@@ -184,6 +191,90 @@ class ORVoiceAssistant
     }
 
     /**
+     * Initialize command popup functionality
+     */
+    initializeCommandPopup()
+    {
+        const commandsBtn = document.getElementById('commands-btn');
+        const commandPopupOverlay = document.getElementById('command-popup-overlay');
+        const closeCommandsPopup = document.getElementById('close-commands-popup');
+
+        if (!commandsBtn || !commandPopupOverlay || !closeCommandsPopup)
+        {
+            console.warn('Command popup elements not found, skipping initialization');
+            return;
+        }
+
+        // Show popup when commands button is clicked
+        commandsBtn.addEventListener('click', () =>
+        {
+            this.showCommandPopup();
+        });
+
+        // Close popup when close button is clicked
+        closeCommandsPopup.addEventListener('click', () =>
+        {
+            this.hideCommandPopup();
+        });
+
+        // Close popup when clicking outside the popup content
+        commandPopupOverlay.addEventListener('click', (e) =>
+        {
+            if (e.target === commandPopupOverlay)
+            {
+                this.hideCommandPopup();
+            }
+        });
+
+        // Close popup with Escape key
+        document.addEventListener('keydown', (e) =>
+        {
+            if (e.key === 'Escape' && commandPopupOverlay.classList.contains('show'))
+            {
+                this.hideCommandPopup();
+            }
+        });
+
+        console.log('Command popup initialized');
+    }
+
+    /**
+     * Show the command reference popup
+     */
+    showCommandPopup()
+    {
+        const commandPopupOverlay = document.getElementById('command-popup-overlay');
+        if (commandPopupOverlay)
+        {
+            commandPopupOverlay.classList.add('show');
+            // Focus the close button for accessibility
+            const closeBtn = document.getElementById('close-commands-popup');
+            if (closeBtn)
+            {
+                closeBtn.focus();
+            }
+        }
+    }
+
+    /**
+     * Hide the command reference popup
+     */
+    hideCommandPopup()
+    {
+        const commandPopupOverlay = document.getElementById('command-popup-overlay');
+        if (commandPopupOverlay)
+        {
+            commandPopupOverlay.classList.remove('show');
+            // Return focus to the commands button
+            const commandsBtn = document.getElementById('commands-btn');
+            if (commandsBtn)
+            {
+                commandsBtn.focus();
+            }
+        }
+    }
+
+    /**
      * Initialize external viewers (VTK and DICOM)
      */
     initializeViewers()
@@ -199,7 +290,7 @@ class ORVoiceAssistant
         }
 
         // Initialize DICOM viewer
-        const dicomPanelContainer = document.getElementById('panel-5');
+        const dicomPanelContainer = document.getElementById('dicom-viewer');
         if (dicomPanelContainer)
         {
             this.dicomViewer = new DicomViewer(
@@ -248,7 +339,15 @@ class ORVoiceAssistant
         try
         {
             console.log('Processing command:', command);
-            // Try API processing first
+
+            // First check if it's a surgical grid command
+            if (this.surgicalGrid.processGridCommand(command))
+            {
+                // Grid command was handled, no need to process further
+                return;
+            }
+
+            // Try API processing for medical commands
             const result = await this.apiClient.processCommand(
                 command,
                 this.procedureManager.getCurrentProcedure()
@@ -383,8 +482,58 @@ class ORVoiceAssistant
                         this.alertManager.showInfo('Reset 3D view orientation');
                     }
                     break;
+
+                case 'close':
+                    this.handleCloseDisplayCommand(command.target);
+                    break;
+
+                case 'open':
+                    this.handleOpenDisplayCommand(command.target);
+                    break;
             }
         });
+    }
+
+    /**
+     * Handle close display commands from API
+     */
+    handleCloseDisplayCommand(target)
+    {
+        const panelMap = {
+            'patient': 'panel-1',
+            'voice': 'panel-2',
+            'monitoring': 'panel-3',
+            '3d': 'panel-4',
+            'dicom': 'panel-5'
+        };
+
+        const panelId = panelMap[target];
+        if (panelId && window.closePanel)
+        {
+            window.closePanel(panelId);
+            this.alertManager.showInfo(`Closed ${target} panel`);
+        }
+    }
+
+    /**
+     * Handle open display commands from API
+     */
+    handleOpenDisplayCommand(target)
+    {
+        const panelMap = {
+            'patient': 'panel-1',
+            'voice': 'panel-2',
+            'monitoring': 'panel-3',
+            '3d': 'panel-4',
+            'dicom': 'panel-5'
+        };
+
+        const panelId = panelMap[target];
+        if (panelId && window.reopenPanel)
+        {
+            window.reopenPanel(panelId);
+            this.alertManager.showInfo(`Opened ${target} panel`);
+        }
     }
 
     /**
@@ -481,15 +630,13 @@ class ORVoiceAssistant
     }
 
     /**
-     * Update grid layout
+     * Update grid layout (now handled by surgical grid)
      */
     updateGridLayout()
     {
-        // Use the existing global function
-        if (typeof updateGridLayout === 'function')
-        {
-            updateGridLayout();
-        }
+        // Grid layout is now handled by the SurgicalGridManager
+        // This method kept for compatibility
+        console.log('Grid layout managed by SurgicalGridManager');
     }
 
     /**
@@ -507,91 +654,26 @@ class ORVoiceAssistant
     }
 }
 
-// Dynamic grid layout calculation (keeping existing functionality)
-function updateGridLayout()
-{
-    const mainContainer = document.querySelector('.main-container');
-    const panels = ['panel-1', 'panel-2', 'panel-3', 'panel-4', 'panel-5'];
-    const panelWeights = {
-        'panel-1': 1,     // Patient Info
-        'panel-2': 1.2,   // Voice Command Center (slightly larger)
-        'panel-3': 1,     // Procedural Monitoring  
-        'panel-4': 1,     // 3D Visualization
-        'panel-5': 1      // DICOM Viewer
-    };
-
-    // Build grid template based on open panels
-    const gridColumns = [];
-
-    panels.forEach(panelId =>
-    {
-        const panel = document.getElementById(panelId);
-        if (panel && !panel.classList.contains('closed'))
-        {
-            gridColumns.push(`${panelWeights[panelId]}fr`);
-        } else
-        {
-            gridColumns.push('0');
-        }
-    });
-
-    mainContainer.style.gridTemplateColumns = gridColumns.join(' ');
-    console.log('Grid layout updated:', gridColumns.join(' '));
-}
-
-// Global functions for panel management (keeping existing functionality)
+// Legacy functions for compatibility (now handled by SurgicalGridManager)
 window.closePanel = function (panelId)
 {
-    const panel = document.getElementById(panelId);
-    if (panel)
-    {
-        panel.classList.add('closed');
-        updateGridLayout();
-        console.log(`Panel ${panelId} closed`);
-    }
+    console.log(`Legacy closePanel called for ${panelId} - now handled by SurgicalGridManager`);
 };
 
 window.reopenPanel = function (panelId)
 {
-    const panel = document.getElementById(panelId);
-    if (panel)
-    {
-        panel.classList.remove('closed');
-        updateGridLayout();
-        console.log(`Panel ${panelId} reopened`);
-    }
+    console.log(`Legacy reopenPanel called for ${panelId} - now handled by SurgicalGridManager`);
 };
 
 window.getClosedPanels = function ()
 {
-    const closedPanels = [];
-    const panels = ['panel-1', 'panel-3', 'panel-4', 'panel-5'];
-
-    panels.forEach(panelId =>
-    {
-        const panel = document.getElementById(panelId);
-        if (panel && panel.classList.contains('closed'))
-        {
-            closedPanels.push(panelId);
-        }
-    });
-
-    return closedPanels;
+    console.log('Legacy getClosedPanels called - now handled by SurgicalGridManager');
+    return [];
 };
 
 window.togglePanel = function (panelId)
 {
-    const panel = document.getElementById(panelId);
-    if (panel)
-    {
-        if (panel.classList.contains('closed'))
-        {
-            window.reopenPanel(panelId);
-        } else
-        {
-            window.closePanel(panelId);
-        }
-    }
+    console.log(`Legacy togglePanel called for ${panelId} - now handled by SurgicalGridManager`);
 };
 
 // Function to initialize the application after components are loaded

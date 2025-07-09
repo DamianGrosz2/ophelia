@@ -47,7 +47,7 @@ class ComponentLoader
             }
 
             this.loadedComponents.add(componentName);
-            console.log(`Component loaded: ${componentName}`);
+            // console.log(`Component loaded: ${componentName}`);
             return true;
         } catch (error)
         {
@@ -75,17 +75,41 @@ class ComponentLoader
      */
     async initializeApp()
     {
-        const components = [
+        // Load structural components first
+        const structuralComponents = [
             { name: 'header', target: 'body', append: 'prepend' },
-            { name: 'patient-panel', target: '.main-container', append: true },
-            { name: 'voice-interface', target: '.main-container', append: true },
-            { name: 'monitoring-panel', target: '.main-container', append: true },
-            { name: 'vtk-viewer', target: '.main-container', append: true },
-            { name: 'dicom-viewer', target: '.main-container', append: true }
+            { name: 'command-reference', target: 'body', append: true },
+            { name: 'surgical-grid', target: '.main-container', append: false }
         ];
 
-        console.log('Loading application components...');
-        const success = await this.loadComponents(components);
+        console.log('Loading structural components...');
+        const structuralSuccess = await this.loadComponents(structuralComponents);
+
+        if (!structuralSuccess)
+        {
+            console.error('Failed to load structural components');
+            return false;
+        }
+
+        // Load content components that will be available for the grid
+        const contentComponents = [
+            { name: 'patient-panel', target: 'body', append: true },
+            { name: 'voice-interface', target: 'body', append: true },
+            { name: 'monitoring-panel', target: 'body', append: true },
+            { name: 'vtk-viewer', target: 'body', append: true },
+            { name: 'dicom-viewer', target: 'body', append: true }
+        ];
+
+        console.log('Loading content components...');
+        const contentSuccess = await this.loadComponents(contentComponents);
+
+        // Immediately remap component IDs for surgical grid compatibility
+        this.remapComponentIds();
+
+        // Hide the content components initially (they'll be cloned into grid cells)
+        this.hideContentComponents();
+
+        const success = structuralSuccess && contentSuccess;
 
         if (success)
         {
@@ -98,6 +122,66 @@ class ComponentLoader
         }
 
         return success;
+    }
+
+    /**
+ * Remap component IDs for surgical grid compatibility
+ */
+    remapComponentIds()
+    {
+        const idMappings = {
+            'panel-1': 'patient-panel',
+            'panel-2': 'voice-interface',
+            'panel-3': 'monitoring-panel',
+            'panel-4': 'vtk-viewer',
+            'panel-5': 'dicom-viewer'
+        };
+
+        Object.entries(idMappings).forEach(([oldId, newId]) =>
+        {
+            const element = document.getElementById(oldId);
+            if (element)
+            {
+                element.id = newId;
+                // console.log(`Remapped ${oldId} to ${newId} for surgical grid`);
+            } else
+            {
+                console.warn(`Component ${oldId} not found for remapping to ${newId}`);
+            }
+        });
+    }
+
+    /**
+     * Hide content components that are used as templates for the grid
+     */
+    hideContentComponents()
+    {
+        const componentIds = [
+            'patient-panel',
+            'voice-interface',
+            'monitoring-panel',
+            'vtk-viewer',
+            'dicom-viewer'
+        ];
+
+        componentIds.forEach(componentId =>
+        {
+            const element = document.getElementById(componentId);
+            if (element)
+            {
+                // Hide the component
+                element.style.display = 'none';
+                element.style.position = 'absolute';
+                element.style.top = '-9999px';
+                element.style.left = '-9999px';
+                element.style.visibility = 'hidden';
+
+                console.log(`Hidden component: ${componentId}`);
+            } else
+            {
+                console.warn(`Component ${componentId} not found for hiding`);
+            }
+        });
     }
 
     /**
