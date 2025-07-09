@@ -1,0 +1,188 @@
+<!-- Surgical Grid Layout Component -->
+<div class="surgical-grid-container">
+    <!-- Grid Cell Labels Overlay -->
+    <div class="grid-labels-overlay">
+        <div class="grid-label" data-position="A-Top">A-Top</div>
+        <div class="grid-label" data-position="B-Top">B-Top</div>
+        <div class="grid-label" data-position="C-Top">C-Top</div>
+        <div class="grid-label" data-position="D-Top">D-Top</div>
+        <div class="grid-label" data-position="A-Bottom">A-Bottom</div>
+        <div class="grid-label" data-position="B-Bottom">B-Bottom</div>
+        <div class="grid-label" data-position="C-Bottom">C-Bottom</div>
+        <div class="grid-label" data-position="D-Bottom">D-Bottom</div>
+    </div>
+
+    <!-- Grid Cells -->
+    <div class="surgical-grid">
+        <!-- Top Row -->
+        <div class="grid-cell" id="cell-A-Top" data-position="A-Top">
+            <div class="cell-header">
+                <span class="cell-label">A-Top</span>
+                <div class="cell-controls">
+                    <button class="cell-reorder-btn" data-position="A-Top" title="Reorder">⌘</button>
+                    <button class="cell-close-btn" data-position="A-Top" title="Close">×</button>
+                </div>
+            </div>
+            <div class="cell-content" id="content-A-Top">
+                <!-- Content will be dynamically loaded here -->
+            </div>
+        </div>
+
+        <div class="grid-cell" id="cell-B-Top" data-position="B-Top">
+            <div class="cell-header">
+                <span class="cell-label">B-Top</span>
+                <div class="cell-controls">
+                    <button class="cell-reorder-btn" data-position="B-Top" title="Reorder">⌘</button>
+                    <button class="cell-close-btn" data-position="B-Top" title="Close">×</button>
+                </div>
+            </div>
+            <div class="cell-content" id="content-B-Top">
+                <!-- Content will be dynamically loaded here -->
+            </div>
+        </div>
+
+        <div class="grid-cell" id="cell-C-Top" data-position="C-Top">
+            <div class="cell-header">
+                <span class="cell-label">C-Top</span>
+                <div class="cell-controls">
+                    <button class="cell-reorder-btn" data-position="C-Top" title="Reorder">⌘</button>
+                    <button class="cell-close-btn" data-position="C-Top" title="Close">×</button>
+                </div>
+            </div>
+            <div class="cell-content" id="content-C-Top">
+                <!-- Content will be dynamically loaded here -->
+            </div>
+        </div>
+
+        <div class="grid-cell" id="cell-D-Top" data-position="D-Top">
+            <div class="cell-header">
+                <span class="cell-label">D-Top</span>
+                <div class="cell-controls">
+                    <button class="cell-reorder-btn" data-position="D-Top" title="Reorder">⌘</button>
+                    <button class="cell-close-btn" data-position="D-Top" title="Close">×</button>
+                </div>
+            </div>
+            <div class="cell-content" id="content-D-Top">
+                <!-- Content will be dynamically loaded here -->
+            </div>
+        </div>
+
+        <!-- Bottom Row -->
+        <div class="grid-cell" id="cell-A-Bottom" data-position="A-Bottom">
+            <div class="cell-header">
+                <span class="cell-label">A-Bottom</span>
+                <div class="cell-controls">
+                    <button class="cell-reorder-btn" data-position="A-Bottom" title="Reorder">⌘</button>
+                    <button class="cell-close-btn" data-position="A-Bottom" title="Close">×</button>
+                </div>
+            </div>
+            <div class="cell-content" id="content-A-Bottom">
+                <!-- Content will be dynamically loaded here -->
+            </div>
+        </div>
+
+        <div class="grid-cell" id="cell-B-Bottom" data-position="B-Bottom">
+            <div class="cell-header">
+                <span class="cell-label">B-Bottom</span>
+                <div class="cell-controls">
+                    <button class="cell-reorder-btn" data-position="B-Bottom" title="Reorder">⌘</button>
+                    <button class="cell-close-btn" data-position="B-Bottom" title="Close">×</button>
+                </div>
+            </div>
+            <div class="cell-content" id="content-B-Bottom">
+                <!-- Content will be dynamically loaded here -->
+            </div>
+        </div>
+
+        <div class="grid-cell" id="cell-C-Bottom" data-position="C-Bottom">
+            <div class="cell-header">
+                <span class="cell-label">C-Bottom</span>
+                <div class="cell-controls">
+                    <button class="cell-reorder-btn" data-position="C-Bottom" title="Reorder">⌘</button>
+                    <button class="cell-close-btn" data-position="C-Bottom" title="Close">×</button>
+                </div>
+            </div>
+            <div class="cell-content" id="content-C-Bottom">
+                <!-- Content will be dynamically loaded here -->
+            </div>
+        </div>
+
+        <div class="grid-cell" id="cell-D-Bottom" data-position="D-Bottom">
+            <div class="cell-header">
+                <span class="cell-label">D-Bottom</span>
+                <div class="cell-controls">
+                    <button class="cell-reorder-btn" data-position="D-Bottom" title="Reorder">⌘</button>
+                    <button class="cell-close-btn" data-position="D-Bottom" title="Close">×</button>
+                </div>
+            </div>
+            <div class="cell-content" id="content-D-Bottom">
+                <!-- Content will be dynamically loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Reorder Overlay -->
+    <div class="reorder-overlay" id="reorder-overlay">
+        <div class="reorder-content">
+            <div class="reorder-header">
+                <h3>Move to which cell(s)?</h3>
+                <button class="reorder-close-btn" id="reorder-close-btn" title="Close">×</button>
+            </div>
+            <div class="reorder-instructions">
+                <p>Click one or more cells to select target location. Click again to deselect.</p>
+            </div>
+            <div class="reorder-grid">
+                <div class="reorder-cell" data-target="A-Top">
+                    <span class="reorder-cell-label">A-Top</span>
+                </div>
+                <div class="reorder-cell" data-target="B-Top">
+                    <span class="reorder-cell-label">B-Top</span>
+                </div>
+                <div class="reorder-cell" data-target="C-Top">
+                    <span class="reorder-cell-label">C-Top</span>
+                </div>
+                <div class="reorder-cell" data-target="D-Top">
+                    <span class="reorder-cell-label">D-Top</span>
+                </div>
+                <div class="reorder-cell" data-target="A-Bottom">
+                    <span class="reorder-cell-label">A-Bottom</span>
+                </div>
+                <div class="reorder-cell" data-target="B-Bottom">
+                    <span class="reorder-cell-label">B-Bottom</span>
+                </div>
+                <div class="reorder-cell" data-target="C-Bottom">
+                    <span class="reorder-cell-label">C-Bottom</span>
+                </div>
+                <div class="reorder-cell" data-target="D-Bottom">
+                    <span class="reorder-cell-label">D-Bottom</span>
+                </div>
+            </div>
+            <div class="reorder-actions">
+                <button class="reorder-confirm-btn" id="reorder-confirm-btn" disabled>Move Here</button>
+                <button class="reorder-cancel-btn" id="reorder-cancel-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Layout Presets Panel -->
+    <div class="layout-presets-panel" id="layout-presets-panel">
+        <div class="presets-header">
+            <h3>Layout Presets</h3>
+            <button class="presets-toggle" id="presets-toggle" title="Toggle presets panel">📋</button>
+        </div>
+        <div class="presets-content">
+            <div class="preset-actions">
+                <button class="preset-btn save-btn" id="save-layout-btn">Save Current Layout</button>
+                <button class="preset-btn clear-btn" id="clear-screen-btn">Clear Screen</button>
+            </div>
+            <div class="saved-presets" id="saved-presets">
+                <!-- Saved presets will appear here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Command Feedback Overlay -->
+    <div class="command-feedback-overlay" id="command-feedback-overlay">
+        <div class="feedback-message" id="feedback-message"></div>
+    </div>
+</div>

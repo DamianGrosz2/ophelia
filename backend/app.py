@@ -232,6 +232,13 @@ SYSTEM_PROMPTS = {
     - "Next image" or "Previous image" - navigates through image series
     - "Load series [ID]" - loads specific DICOM series by ID
     
+    Available Panel Control commands:
+    - "Close patient panel" or "Hide patient" - closes patient information panel
+    - "Close monitoring" or "Hide vitals" - closes procedural monitoring panel
+    - "Close 3D panel" or "Hide VTK" - closes 3D visualization panel
+    - "Close DICOM" or "Hide image panel" - closes DICOM viewer panel
+    - "Open patient panel" or "Open monitoring" - reopens closed panels
+    
     Always respond with short, clear medical language appropriate for the sterile field.
     Include relevant safety considerations in your responses.
     """,
@@ -257,6 +264,13 @@ SYSTEM_PROMPTS = {
     - "Show cardiac images" or "Load heart scan" - displays cardiac imaging
     - "Next slice" or "Previous slice" - navigates through cardiac series
     - "Load cardiac CT" - loads specific cardiac imaging series
+    
+    Available Panel Control commands:
+    - "Close patient panel" or "Hide patient" - closes patient information panel
+    - "Close monitoring" or "Hide vitals" - closes procedural monitoring panel
+    - "Close 3D panel" or "Hide VTK" - closes 3D visualization panel
+    - "Close DICOM" or "Hide image panel" - closes DICOM viewer panel
+    - "Open patient panel" or "Open monitoring" - reopens closed panels
     
     Always respond with precise EP terminology and include procedural safety considerations.
     """
@@ -363,6 +377,62 @@ def parse_command(transcript: str, procedure_type: str) -> Dict[str, Any]:
             "data": {"direction": direction, "angle": angle}
         })
     
+    # Close/Hide panel commands
+    if "close" in transcript_lower or "hide" in transcript_lower:
+        if "patient" in transcript_lower:
+            display_commands.append({
+                "action": "close",
+                "target": "patient"
+            })
+        elif "monitoring" in transcript_lower or "vitals" in transcript_lower:
+            display_commands.append({
+                "action": "close",
+                "target": "monitoring"
+            })
+        elif "3d" in transcript_lower or "vtk" in transcript_lower:
+            display_commands.append({
+                "action": "close",
+                "target": "3d"
+            })
+        elif "dicom" in transcript_lower or "image" in transcript_lower:
+            display_commands.append({
+                "action": "close",
+                "target": "dicom"
+            })
+        elif "voice" in transcript_lower or "command" in transcript_lower:
+            display_commands.append({
+                "action": "close",
+                "target": "voice"
+            })
+    
+    # Open/Show panel commands
+    if "open" in transcript_lower and "panel" in transcript_lower:
+        if "patient" in transcript_lower:
+            display_commands.append({
+                "action": "open",
+                "target": "patient"
+            })
+        elif "monitoring" in transcript_lower or "vitals" in transcript_lower:
+            display_commands.append({
+                "action": "open",
+                "target": "monitoring"
+            })
+        elif "3d" in transcript_lower or "vtk" in transcript_lower:
+            display_commands.append({
+                "action": "open",
+                "target": "3d"
+            })
+        elif "dicom" in transcript_lower or "image" in transcript_lower:
+            display_commands.append({
+                "action": "open",
+                "target": "dicom"
+            })
+        elif "voice" in transcript_lower or "command" in transcript_lower:
+            display_commands.append({
+                "action": "open",
+                "target": "voice"
+            })
+    
     # Determine command type
     command_type = "query"
     if display_commands:
@@ -423,6 +493,36 @@ def generate_rule_based_response(query: str) -> str:
             return "Moving to previous DICOM image in the series."
         elif "series" in query_lower:
             return "DICOM series contains multiple medical images. Use navigation commands to scroll through them."
+    
+    # Panel close/hide commands
+    if "close" in query_lower or "hide" in query_lower:
+        if "patient" in query_lower:
+            return "Closing patient information panel."
+        elif "monitoring" in query_lower or "vitals" in query_lower:
+            return "Closing procedural monitoring panel."
+        elif "3d" in query_lower or "vtk" in query_lower:
+            return "Closing 3D visualization panel."
+        elif "dicom" in query_lower or "image" in query_lower:
+            return "Closing DICOM viewer panel."
+        elif "voice" in query_lower or "command" in query_lower:
+            return "Closing voice command panel."
+        else:
+            return "Please specify which panel to close: patient, monitoring, 3D, DICOM, or voice."
+    
+    # Panel open commands
+    if "open" in query_lower and "panel" in query_lower:
+        if "patient" in query_lower:
+            return "Opening patient information panel."
+        elif "monitoring" in query_lower or "vitals" in query_lower:
+            return "Opening procedural monitoring panel."
+        elif "3d" in query_lower or "vtk" in query_lower:
+            return "Opening 3D visualization panel."
+        elif "dicom" in query_lower or "image" in query_lower:
+            return "Opening DICOM viewer panel."
+        elif "voice" in query_lower or "command" in query_lower:
+            return "Opening voice command panel."
+        else:
+            return "Please specify which panel to open: patient, monitoring, 3D, DICOM, or voice."
     
     # PAD-specific queries
     if "creatinine" in query_lower:
