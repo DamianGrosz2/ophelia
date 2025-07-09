@@ -248,8 +248,10 @@ body {
 .collapsible-content {
     padding: 1rem;
     background: rgba(26, 35, 50, 0.3);
-    transition: max-height 0.3s ease;
+    transition: max-height 0.3s ease, padding 0.3s ease;
     overflow: hidden;
+    max-height: 1000px;
+    /* Large enough to accommodate content */
 }
 
 .collapsible-content.collapsed {

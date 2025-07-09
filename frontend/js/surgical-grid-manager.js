@@ -756,14 +756,8 @@ export class SurgicalGridManager
             this.updateCellAppearance(pos);
         });
 
-        // Set target positions
-        targetPositions.forEach(pos =>
-        {
-            this.cellContents.set(pos, program);
-            this.cellStates.set(pos, 'occupied');
-            this.loadContentIntoCell(pos, program);
-            this.updateCellAppearance(pos);
-        });
+        // Use openProgram to handle spanning properly
+        this.openProgram(program, targetPositions);
     }
 
     /**
@@ -1578,9 +1572,6 @@ export class SurgicalGridManager
 
         // Check what components are available
         this.logAvailableComponents();
-
-        // Show feedback
-        this.showFeedback('Creating comprehensive demo layout...', 'info');
 
         // Clear any existing demo layouts first
         this.clearOldDemoLayouts();
