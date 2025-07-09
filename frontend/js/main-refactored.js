@@ -96,9 +96,6 @@ class ORVoiceAssistant
         // Wire up component interactions
         this.setupComponentInteractions();
 
-        // Initialize external viewers
-        this.initializeViewers();
-
         // Start the application
         this.startApplication();
 
@@ -287,6 +284,10 @@ class ORVoiceAssistant
                 vtkContainer,
                 (message, level) => this.alertManager.showAlert(message, level)
             );
+        } else
+        {
+            console.error("VTK viewer container not found");
+            this.alertManager.showCritical("Could not initialize VTK viewer: container not found.");
         }
 
         // Initialize DICOM viewer
@@ -321,6 +322,9 @@ class ORVoiceAssistant
 
             // Update grid layout
             this.updateGridLayout();
+
+            // Initialize external viewers after grid is set up
+            setTimeout(() => this.initializeViewers(), 500);
 
             this.alertManager.showSuccess('Voice Assistant ready');
 

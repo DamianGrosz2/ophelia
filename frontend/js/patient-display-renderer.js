@@ -12,7 +12,10 @@ export class PatientDisplayRenderer
         this.patientName = null;
         this.patientSections = null;
 
-        this.initializeElements();
+        // Delay initialization to allow components to be loaded
+        setTimeout(() => {
+            this.initializeElements();
+        }, 1000);
     }
 
     /**
@@ -39,6 +42,12 @@ export class PatientDisplayRenderer
         {
             this.showError('No patient data available');
             return;
+        }
+
+        // Reinitialize elements if they're not found (components may have been loaded later)
+        if (!this.patientName || !this.patientSections)
+        {
+            this.initializeElements();
         }
 
         const patient = data.patient;

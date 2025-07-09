@@ -26,8 +26,11 @@ export class VitalsChartManager
         this.updateInterval = null;
         this.updateFrequency = 2000; // 2 seconds
 
-        this.initializeElements();
-        this.initializeChart();
+        // Delay initialization to allow components to be loaded
+        setTimeout(() => {
+            this.initializeElements();
+            this.initializeChart();
+        }, 1000);
     }
 
     /**
