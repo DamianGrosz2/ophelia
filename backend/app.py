@@ -634,6 +634,14 @@ async def get_procedure_data(procedure_type: str):
     
     return mock_data["procedures"][procedure_type]
 
+@app.get("/mock-data")
+async def get_mock_data():
+    """Get all mock data"""
+    if not mock_data:
+        raise HTTPException(status_code=500, detail="Mock data not available")
+    
+    return mock_data
+
 @app.get("/schedule")
 async def get_or_schedule():
     """Get OR schedule information"""
