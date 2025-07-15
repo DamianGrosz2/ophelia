@@ -79,19 +79,19 @@ class VoiceRequest(BaseModel):
     procedure_type: str
     command_type: str = "query"  # query, control, alert
 
-class VoiceResponse(BaseModel):
-    transcript: str
-    response: str
-    visual_data: Optional[Dict] = None
-    display_commands: Optional[List[str]] = None
-    alert_level: str = "info"  # info, warning, critical
-    audio_url: Optional[str] = None  # URL to generated speech audio
-
 class DisplayCommand(BaseModel):
     action: str  # show, hide, move, zoom, highlight
     target: str  # lab_results, imaging, vitals, etc.
     position: Optional[str] = None  # left, right, center
     data: Optional[Dict] = None
+
+class VoiceResponse(BaseModel):
+    transcript: str
+    response: str
+    visual_data: Optional[Dict] = None
+    display_commands: Optional[List[DisplayCommand]] = None  # Fixed: Use DisplayCommand objects
+    alert_level: str = "info"  # info, warning, critical
+    audio_url: Optional[str] = None  # URL to generated speech audio
 
 # Load mock data
 def load_mock_data():
@@ -257,7 +257,6 @@ SYSTEM_PROMPTS = {
     
     Available VTK/3D commands:
     - "Show 3D heart model" - displays cardiac anatomy
-    - "Zoom ablation sites" - focuses on specific regions
     - "Reset cardiac view" - returns to standard orientation
     
     Available DICOM commands:
@@ -325,12 +324,6 @@ def parse_command(transcript: str, procedure_type: str) -> Dict[str, Any]:
             })
     
     if "zoom" in transcript_lower:
-        if "aorta" in transcript_lower:
-            display_commands.append({
-                "action": "zoom",
-                "target": "aorta",
-                "data": {"zoom_level": 2.0}
-            })
         # 3D model zoom (in / out / factor)
         if "3d" in transcript_lower or "model" in transcript_lower:
             # Default zoom in factor

@@ -39,24 +39,49 @@ export class ApiClient
      */
     async processCommand(transcript, procedureType, commandType = 'query')
     {
-        const response = await fetch(`${this.baseUrl}/ask`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                transcript: transcript,
-                procedure_type: procedureType,
-                command_type: commandType
-            })
-        });
+        console.log('🔄 Processing command:', { transcript, procedureType, commandType });
+        console.log('🔄 API URL:', `${this.baseUrl}/ask`);
 
-        if (!response.ok)
+        try
         {
-            throw new Error('Command processing failed');
-        }
+            const response = await fetch(`${this.baseUrl}/ask`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    transcript: transcript,
+                    procedure_type: procedureType,
+                    command_type: commandType
+                })
+            });
 
-        return await response.json();
+            console.log('🔄 Response status:', response.status);
+            console.log('🔄 Response ok:', response.ok);
+
+            if (!response.ok)
+            {
+                const errorText = await response.text();
+                console.error('❌ Server error response:', errorText);
+                throw new Error(`Command processing failed: ${response.status} - ${errorText}`);
+            }
+
+            const result = await response.json();
+            console.log('✅ Command processed successfully:', result);
+            return result;
+
+        } catch (error)
+        {
+            console.error('❌ Network/parsing error:', error);
+
+            // Check if it's a network error (backend not running)
+            if (error.message.includes('Failed to fetch') || error.name === 'TypeError')
+            {
+                throw new Error('Backend server not reachable. Is the backend running on http://localhost:8000?');
+            }
+
+            throw error;
+        }
     }
 
     /**

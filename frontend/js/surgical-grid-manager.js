@@ -27,6 +27,11 @@ export class SurgicalGridManager
         this.currentReorderSource = null;
         this.selectedReorderCells = new Set();
 
+        // Reopen functionality
+        this.closedPrograms = [];
+        this.selectedClosedProgram = null;
+        this.selectedReopenCells = new Set();
+
         // Available programs/components
         this.availablePrograms = {
             'vitals': 'monitoring-panel',
@@ -41,6 +46,7 @@ export class SurgicalGridManager
 
         this.initializeGrid();
         this.setupEventListeners();
+        this.updateReopenButtonState();
 
 
     }
@@ -195,6 +201,11 @@ export class SurgicalGridManager
             {
                 this.hideReorderOverlay();
             }
+            // Close reopen overlay with Escape key
+            if (e.key === 'Escape' && document.getElementById('reopen-overlay')?.classList.contains('show'))
+            {
+                this.hideReopenOverlay();
+            }
         });
 
         // Layout preset handlers
@@ -215,6 +226,66 @@ export class SurgicalGridManager
         if (presetsToggle)
         {
             presetsToggle.addEventListener('click', () => this.togglePresetsPanel());
+        }
+
+        // Reopen button handler
+        const reopenBtn = document.getElementById('reopen-btn');
+        if (reopenBtn)
+        {
+            reopenBtn.addEventListener('click', () => this.showReopenOverlay());
+        }
+
+        // Reopen overlay handlers
+        const reopenOverlay = document.getElementById('reopen-overlay');
+        const reopenCloseBtn = document.getElementById('reopen-close-btn');
+        const reopenConfirmBtn = document.getElementById('reopen-confirm-btn');
+        const reopenCancelBtn = document.getElementById('reopen-cancel-btn');
+
+        if (reopenCloseBtn)
+        {
+            reopenCloseBtn.addEventListener('click', () => this.hideReopenOverlay());
+        }
+
+        if (reopenConfirmBtn)
+        {
+            reopenConfirmBtn.addEventListener('click', () => this.confirmReopen());
+        }
+
+        if (reopenCancelBtn)
+        {
+            reopenCancelBtn.addEventListener('click', () => this.hideReopenOverlay());
+        }
+
+        if (reopenOverlay)
+        {
+            // Close overlay when clicking outside content
+            reopenOverlay.addEventListener('click', (e) =>
+            {
+                if (e.target === reopenOverlay)
+                {
+                    this.hideReopenOverlay();
+                }
+            });
+
+            // Handle closed program selection
+            document.addEventListener('click', (e) =>
+            {
+                if (e.target.closest('.closed-program-item'))
+                {
+                    const programName = e.target.closest('.closed-program-item').dataset.program;
+                    this.selectClosedProgram(programName);
+                }
+            });
+
+            // Handle reopen cell selection
+            document.addEventListener('click', (e) =>
+            {
+                if (e.target.closest('.reopen-cell'))
+                {
+                    const targetPosition = e.target.closest('.reopen-cell').dataset.target;
+                    this.toggleReopenCellSelection(targetPosition);
+                }
+            });
         }
 
         // Handle preset loading
@@ -887,7 +958,16 @@ export class SurgicalGridManager
                 this.cellContents.get(pos) === component
             );
 
-
+            // Add to closed programs list if not already there
+            if (!this.closedPrograms.find(cp => cp.program === component))
+            {
+                this.closedPrograms.push({
+                    program: component,
+                    displayName: this.getComponentDisplayName(component),
+                    previousPositions: [...spanningPositions]
+                });
+                this.updateReopenButtonState();
+            }
 
             // Clear all positions of this component
             spanningPositions.forEach(pos =>
@@ -1161,11 +1241,38 @@ export class SurgicalGridManager
                     const vtkContainer = document.querySelector(`#content-${position} .vtk-viewer`);
                     if (vtkContainer)
                     {
+                        // Ensure the VTK container has proper dimensions
+                        vtkContainer.style.width = '100%';
+                        vtkContainer.style.height = '100%';
+                        vtkContainer.style.minHeight = '400px';
+                        vtkContainer.style.position = 'relative';
+
+                        console.log('🎯 VTK container setup for position:', position);
+                        console.log('🎯 Container dimensions before init:', {
+                            width: vtkContainer.offsetWidth,
+                            height: vtkContainer.offsetHeight
+                        });
+
                         // Initialize VTK viewer in this cell
                         const vtkViewer = new VtkViewer(
                             vtkContainer,
                             (message, level) => this.alertManager?.showAlert(message, level)
                         );
+
+                        // Store reference globally so main app can access it
+                        window.activeVtkViewer = vtkViewer;
+                        console.log('🎯 VtkViewer instance stored globally:', vtkViewer);
+
+                        // Force a resize after a brief delay to ensure proper container sizing
+                        setTimeout(() =>
+                        {
+                            if (vtkViewer && vtkViewer.resize)
+                            {
+                                vtkViewer.resize();
+                                console.log('🎯 VTK viewer resized for grid cell');
+                            }
+                        }, 100);
+
                         // The VTK viewer will automatically load CPO_ist.vtk due to our earlier changes
                     } else
                     {
@@ -1960,5 +2067,227 @@ export class SurgicalGridManager
 
 
 
+    }
+
+    /**
+     * Update the reopen button state based on available closed programs
+     */
+    updateReopenButtonState()
+    {
+        const reopenBtn = document.getElementById('reopen-btn');
+        if (reopenBtn)
+        {
+            reopenBtn.disabled = this.closedPrograms.length === 0;
+        }
+    }
+
+    /**
+     * Show reopen overlay for selecting closed programs and target positions
+     */
+    showReopenOverlay()
+    {
+        if (this.closedPrograms.length === 0)
+        {
+            this.showFeedback('No closed programs to reopen', 'warning');
+            return;
+        }
+
+        this.selectedClosedProgram = null;
+        this.selectedReopenCells.clear();
+        this.updateReopenOverlay();
+        this.updateReopenConfirmButton();
+
+        const overlay = document.getElementById('reopen-overlay');
+        if (overlay)
+        {
+            overlay.classList.add('show');
+        }
+    }
+
+    /**
+     * Hide reopen overlay
+     */
+    hideReopenOverlay()
+    {
+        const overlay = document.getElementById('reopen-overlay');
+        if (overlay)
+        {
+            overlay.classList.remove('show');
+        }
+        this.selectedClosedProgram = null;
+        this.selectedReopenCells.clear();
+    }
+
+    /**
+     * Update reopen overlay to show current state
+     */
+    updateReopenOverlay()
+    {
+        this.updateClosedProgramsList();
+        this.updateReopenCells();
+    }
+
+    /**
+     * Update the list of closed programs
+     */
+    updateClosedProgramsList()
+    {
+        const closedProgramsList = document.getElementById('closed-programs-list');
+        if (!closedProgramsList) return;
+
+        closedProgramsList.innerHTML = '';
+
+        if (this.closedPrograms.length === 0)
+        {
+            closedProgramsList.innerHTML = '<p style="color: #94a3b8; margin: 0;">No closed programs</p>';
+            return;
+        }
+
+        this.closedPrograms.forEach(closedProgram =>
+        {
+            const item = document.createElement('div');
+            item.className = 'closed-program-item';
+            item.dataset.program = closedProgram.program;
+            item.textContent = closedProgram.displayName;
+
+            if (this.selectedClosedProgram === closedProgram.program)
+            {
+                item.classList.add('selected');
+            }
+
+            closedProgramsList.appendChild(item);
+        });
+    }
+
+    /**
+     * Update reopen cells to show current cell states
+     */
+    updateReopenCells()
+    {
+        const reopenCells = document.querySelectorAll('.reopen-cell');
+
+        reopenCells.forEach(cell =>
+        {
+            const position = cell.dataset.target;
+
+            // Clear previous states
+            cell.classList.remove('occupied', 'selected');
+
+            // Mark occupied cells
+            if (this.cellContents.get(position))
+            {
+                cell.classList.add('occupied');
+            }
+            // Mark selected cells
+            else if (this.selectedReopenCells.has(position))
+            {
+                cell.classList.add('selected');
+            }
+        });
+    }
+
+    /**
+     * Select a closed program
+     */
+    selectClosedProgram(programName)
+    {
+        this.selectedClosedProgram = programName;
+        this.selectedReopenCells.clear(); // Clear cell selection when changing program
+        this.updateReopenOverlay();
+        this.updateReopenConfirmButton();
+    }
+
+    /**
+     * Toggle selection of a cell in the reopen overlay
+     */
+    toggleReopenCellSelection(targetPosition)
+    {
+        // Can't select occupied cells
+        if (this.cellContents.get(targetPosition))
+        {
+            return;
+        }
+
+        // Toggle selection
+        if (this.selectedReopenCells.has(targetPosition))
+        {
+            this.selectedReopenCells.delete(targetPosition);
+        }
+        else
+        {
+            this.selectedReopenCells.add(targetPosition);
+        }
+
+        // Update visual state and confirm button
+        this.updateReopenCells();
+        this.updateReopenConfirmButton();
+    }
+
+    /**
+     * Update the confirm button state based on selection
+     */
+    updateReopenConfirmButton()
+    {
+        const confirmBtn = document.getElementById('reopen-confirm-btn');
+        if (confirmBtn)
+        {
+            const hasProgram = this.selectedClosedProgram !== null;
+            const hasCells = this.selectedReopenCells.size > 0;
+            confirmBtn.disabled = !hasProgram || !hasCells;
+
+            if (hasProgram && hasCells)
+            {
+                const cellCount = this.selectedReopenCells.size;
+                const programName = this.closedPrograms.find(cp => cp.program === this.selectedClosedProgram)?.displayName || this.selectedClosedProgram;
+                confirmBtn.textContent = `Reopen ${programName} (${cellCount} cell${cellCount > 1 ? 's' : ''})`;
+            }
+            else
+            {
+                confirmBtn.textContent = 'Reopen Here';
+            }
+        }
+    }
+
+    /**
+     * Confirm and execute the reopen operation
+     */
+    confirmReopen()
+    {
+        if (!this.selectedClosedProgram || this.selectedReopenCells.size === 0)
+        {
+            return;
+        }
+
+        const targetPositions = Array.from(this.selectedReopenCells);
+        const closedProgramData = this.closedPrograms.find(cp => cp.program === this.selectedClosedProgram);
+
+        if (!closedProgramData)
+        {
+            this.showFeedback('Selected program not found in closed programs list', 'error');
+            return;
+        }
+
+        try
+        {
+            // Reopen the program
+            this.openProgram(closedProgramData.program, targetPositions);
+
+            // Remove from closed programs list
+            this.closedPrograms = this.closedPrograms.filter(cp => cp.program !== this.selectedClosedProgram);
+            this.updateReopenButtonState();
+
+            const cellText = targetPositions.length === 1 ? 'cell' : 'cells';
+            this.showFeedback(
+                `Reopened ${closedProgramData.displayName} in ${targetPositions.length} ${cellText}`,
+                'success'
+            );
+        }
+        catch (error)
+        {
+            console.error('Error executing reopen:', error);
+            this.showFeedback('Error reopening program', 'error');
+        }
+
+        this.hideReopenOverlay();
     }
 } 

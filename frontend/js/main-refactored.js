@@ -427,9 +427,14 @@ class ORVoiceAssistant
      */
     executeDisplayCommands(commands)
     {
+        console.log('🎯 executeDisplayCommands called with:', commands);
+        console.log('🎯 Available VtkViewer references:');
+        console.log('🎯   this.vtkViewer:', this.vtkViewer);
+        console.log('🎯   window.activeVtkViewer:', window.activeVtkViewer);
+
         commands.forEach(command =>
         {
-            console.log('Executing display command:', command);
+            console.log('🎯 Processing single command:', command);
 
             switch (command.action)
             {
@@ -467,8 +472,16 @@ class ORVoiceAssistant
                     if (command.target === '3d')
                     {
                         const factor = command.data?.zoom_level || 1.5;
-                        this.vtkViewer?.zoomVtkView(factor);
-                        this.alertManager.showInfo(`Zooming 3D view by ${factor}x`);
+                        const vtkViewer = this.vtkViewer || window.activeVtkViewer;
+                        if (vtkViewer)
+                        {
+                            vtkViewer.zoomVtkView(factor);
+                            this.alertManager.showInfo(`Zooming 3D view by ${factor}x`);
+                        } else
+                        {
+                            console.error('❌ No VtkViewer available for zoom command');
+                            this.alertManager.showWarning('3D viewer not available');
+                        }
                     }
                     break;
 
@@ -477,16 +490,34 @@ class ORVoiceAssistant
                     {
                         const direction = command.data?.direction || 'left';
                         const angle = command.data?.angle || 15;
-                        this.vtkViewer?.rotateVtkView(direction, angle);
-                        this.alertManager.showInfo(`Rotating 3D view ${direction}`);
+                        const vtkViewer = this.vtkViewer || window.activeVtkViewer;
+                        console.log('🎯 Executing rotate command with viewer:', vtkViewer);
+                        if (vtkViewer)
+                        {
+                            vtkViewer.rotateVtkView(direction, angle);
+                            this.alertManager.showInfo(`Rotating 3D view ${direction}`);
+                            console.log('✅ Rotate command executed successfully');
+                        } else
+                        {
+                            console.error('❌ No VtkViewer available for rotate command');
+                            this.alertManager.showWarning('3D viewer not available');
+                        }
                     }
                     break;
 
                 case 'reset':
                     if (command.target === '3d')
                     {
-                        this.vtkViewer?.resetVtkView();
-                        this.alertManager.showInfo('Reset 3D view orientation');
+                        const vtkViewer = this.vtkViewer || window.activeVtkViewer;
+                        if (vtkViewer)
+                        {
+                            vtkViewer.resetVtkView();
+                            this.alertManager.showInfo('Reset 3D view orientation');
+                        } else
+                        {
+                            console.error('❌ No VtkViewer available for reset command');
+                            this.alertManager.showWarning('3D viewer not available');
+                        }
                     }
                     break;
 

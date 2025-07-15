@@ -167,6 +167,63 @@
         </div>
     </div>
 
+    <!-- Reopen Overlay -->
+    <div class="reopen-overlay" id="reopen-overlay">
+        <div class="reopen-content">
+            <div class="reopen-header">
+                <h3>Reopen Closed Programs</h3>
+                <button class="reopen-close-btn" id="reopen-close-btn" title="Close">×</button>
+            </div>
+            <div class="reopen-instructions">
+                <p>Select a closed program and then choose where to reopen it.</p>
+            </div>
+
+            <!-- Closed Programs Section -->
+            <div class="closed-programs-section">
+                <h4>Closed Programs:</h4>
+                <div class="closed-programs-list" id="closed-programs-list">
+                    <!-- Closed programs will be populated here -->
+                </div>
+            </div>
+
+            <!-- Available Cells Section -->
+            <div class="available-cells-section">
+                <h4>Available Cells:</h4>
+                <div class="reopen-grid">
+                    <div class="reopen-cell" data-target="A-Top">
+                        <span class="reopen-cell-label">A-Top</span>
+                    </div>
+                    <div class="reopen-cell" data-target="B-Top">
+                        <span class="reopen-cell-label">B-Top</span>
+                    </div>
+                    <div class="reopen-cell" data-target="C-Top">
+                        <span class="reopen-cell-label">C-Top</span>
+                    </div>
+                    <div class="reopen-cell" data-target="D-Top">
+                        <span class="reopen-cell-label">D-Top</span>
+                    </div>
+                    <div class="reopen-cell" data-target="A-Bottom">
+                        <span class="reopen-cell-label">A-Bottom</span>
+                    </div>
+                    <div class="reopen-cell" data-target="B-Bottom">
+                        <span class="reopen-cell-label">B-Bottom</span>
+                    </div>
+                    <div class="reopen-cell" data-target="C-Bottom">
+                        <span class="reopen-cell-label">C-Bottom</span>
+                    </div>
+                    <div class="reopen-cell" data-target="D-Bottom">
+                        <span class="reopen-cell-label">D-Bottom</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="reopen-actions">
+                <button class="reopen-confirm-btn" id="reopen-confirm-btn" disabled>Reopen Here</button>
+                <button class="reopen-cancel-btn" id="reopen-cancel-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Layout Presets Panel -->
     <div class="layout-presets-panel" id="layout-presets-panel">
         <div class="presets-header">

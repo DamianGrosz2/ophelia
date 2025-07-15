@@ -298,11 +298,16 @@ export class ChatInterface
         }
 
         // Play audio if available, otherwise fallback to browser TTS
+        console.log('🔊 TTS Decision - audio_url:', result.audio_url);
+        console.log('🔊 TTS Decision - full result:', result);
+
         if (result.audio_url)
         {
+            console.log('🔊 Using AI TTS audio:', result.audio_url);
             this.playAudio(`${apiBaseUrl}${result.audio_url}`);
         } else
         {
+            console.log('🔊 Using browser TTS fallback');
             this.speakText(result.response);
         }
 
