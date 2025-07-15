@@ -163,6 +163,7 @@ export class TranscriptionManager
             this.isRecording = false;
             this.currentSessionId = null;
             this.recordingStartTime = null;
+            this.activeSegmentRecorders = []; // Clear any remaining recorders
 
             // Update UI
             this.updateUI();
