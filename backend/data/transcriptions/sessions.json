@@ -1,0 +1,11 @@
+{
+    "sessions": [
+        {
+            "session_id": "session_001",
+            "start_time": "2025-07-16T00:09:28.477442",
+            "procedure_type": "pad_angioplasty",
+            "status": "active"
+        }
+    ],
+    "last_session_id": 1
+}

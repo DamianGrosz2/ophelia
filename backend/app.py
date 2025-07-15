@@ -93,6 +93,36 @@ class VoiceResponse(BaseModel):
     alert_level: str = "info"  # info, warning, critical
     audio_url: Optional[str] = None  # URL to generated speech audio
 
+# New models for transcription and letter functionality
+class TranscriptionSession(BaseModel):
+    session_id: str
+    start_time: datetime
+    end_time: Optional[datetime] = None
+    procedure_type: str
+    status: str = "active"  # active, completed, stopped
+    patient_context: Optional[Dict] = None
+
+class TranscriptionSegment(BaseModel):
+    timestamp: str
+    text: str
+
+class TranscriptionData(BaseModel):
+    session_id: str
+    transcript_segments: List[TranscriptionSegment]
+    full_transcript: str
+    procedure_context: Optional[Dict] = None
+
+class DoctorLetter(BaseModel):
+    letter_id: str
+    session_id: str
+    content: str
+    created_at: datetime
+    procedure_type: str
+
+class LetterGenerationRequest(BaseModel):
+    session_id: str
+    additional_notes: Optional[str] = None
+
 # Load mock data
 def load_mock_data():
     global mock_data
@@ -279,6 +309,30 @@ SYSTEM_PROMPTS = {
 def parse_command(transcript: str, procedure_type: str) -> Dict[str, Any]:
     transcript_lower = transcript.lower()
     
+    # Transcription control commands
+    transcription_commands = []
+    
+    if "start transcription" in transcript_lower:
+        transcription_commands.append({
+            "action": "start_transcription",
+            "procedure_type": procedure_type
+        })
+    
+    if "stop transcription" in transcript_lower:
+        transcription_commands.append({
+            "action": "stop_transcription"
+        })
+    
+    if "create doctor" in transcript_lower and "letter" in transcript_lower:
+        transcription_commands.append({
+            "action": "generate_letter"
+        })
+    
+    if "show doctor" in transcript_lower and "letter" in transcript_lower:
+        transcription_commands.append({
+            "action": "show_letter"
+        })
+    
     # Display control commands
     display_commands = []
     
@@ -430,12 +484,15 @@ def parse_command(transcript: str, procedure_type: str) -> Dict[str, Any]:
     command_type = "query"
     if display_commands:
         command_type = "control"
+    if transcription_commands:
+        command_type = "transcription"
     if "alert" in transcript_lower or "warning" in transcript_lower:
         command_type = "alert"
     
     return {
         "command_type": command_type,
         "display_commands": display_commands,
+        "transcription_commands": transcription_commands,
         "query": transcript
     }
 
@@ -557,7 +614,69 @@ def generate_rule_based_response(query: str) -> str:
     
     return "I can help you with patient data, lab values, procedural parameters, display controls, 3D visualization, and DICOM medical imaging. Please specify what information you need."
 
+# File storage functions for transcriptions and letters
+def load_sessions_index():
+    """Load the sessions index file"""
+    sessions_file = Path("data/transcriptions/sessions.json")
+    if sessions_file.exists():
+        with open(sessions_file, "r") as f:
+            return json.load(f)
+    return {"sessions": [], "last_session_id": 0}
 
+def save_sessions_index(data):
+    """Save the sessions index file"""
+    sessions_file = Path("data/transcriptions/sessions.json")
+    sessions_file.parent.mkdir(parents=True, exist_ok=True)
+    with open(sessions_file, "w") as f:
+        json.dump(data, f, indent=2, default=str)
+
+def load_transcription_session(session_id: str):
+    """Load a specific transcription session"""
+    session_file = Path(f"data/transcriptions/{session_id}.json")
+    if session_file.exists():
+        with open(session_file, "r") as f:
+            return json.load(f)
+    return None
+
+def save_transcription_session(session_data: TranscriptionData):
+    """Save a transcription session"""
+    session_file = Path(f"data/transcriptions/{session_data.session_id}.json")
+    session_file.parent.mkdir(parents=True, exist_ok=True)
+    with open(session_file, "w") as f:
+        json.dump(session_data.dict(), f, indent=2, default=str)
+
+def load_letters_index():
+    """Load the letters index file"""
+    letters_file = Path("data/letters/letters.json")
+    if letters_file.exists():
+        with open(letters_file, "r") as f:
+            return json.load(f)
+    return {"letters": [], "last_letter_id": 0}
+
+def save_letters_index(data):
+    """Save the letters index file"""
+    letters_file = Path("data/letters/letters.json")
+    letters_file.parent.mkdir(parents=True, exist_ok=True)
+    with open(letters_file, "w") as f:
+        json.dump(data, f, indent=2, default=str)
+
+def save_doctor_letter(letter_data: DoctorLetter):
+    """Save a doctor's letter"""
+    letter_file = Path(f"data/letters/{letter_data.letter_id}.json")
+    letter_file.parent.mkdir(parents=True, exist_ok=True)
+    with open(letter_file, "w") as f:
+        json.dump(letter_data.dict(), f, indent=2, default=str)
+
+def load_doctor_letter(letter_id: str):
+    """Load a specific doctor's letter"""
+    letter_file = Path(f"data/letters/{letter_id}.json")
+    if letter_file.exists():
+        with open(letter_file, "r") as f:
+            return json.load(f)
+    return None
+
+# Global variable to track active transcription session
+active_transcription_session = None
 
 @app.get("/")
 async def root():
@@ -906,6 +1025,355 @@ async def list_dicom_series():
         series_list = ["general"]
     
     return {"series": series_list}
+
+# Transcription session endpoints
+@app.post("/transcription/start")
+async def start_transcription(procedure_type: str = "pad_angioplasty"):
+    """Start a new transcription session"""
+    global active_transcription_session
+    
+    try:
+        # Load sessions index
+        sessions_data = load_sessions_index()
+        
+        # Generate new session ID
+        session_id = f"session_{sessions_data['last_session_id'] + 1:03d}"
+        sessions_data['last_session_id'] += 1
+        
+        # Create new session
+        session = TranscriptionSession(
+            session_id=session_id,
+            start_time=datetime.now(),
+            procedure_type=procedure_type,
+            status="active",
+            patient_context=mock_data.get("procedures", {}).get(procedure_type, {}) if mock_data else None
+        )
+        
+        # Add to sessions index
+        sessions_data['sessions'].append({
+            "session_id": session_id,
+            "start_time": session.start_time.isoformat(),
+            "procedure_type": procedure_type,
+            "status": "active"
+        })
+        
+        # Save sessions index
+        save_sessions_index(sessions_data)
+        
+        # Initialize empty transcription data
+        transcription_data = TranscriptionData(
+            session_id=session_id,
+            transcript_segments=[],
+            full_transcript="",
+            procedure_context=session.patient_context
+        )
+        
+        # Save transcription session
+        save_transcription_session(transcription_data)
+        
+        # Set as active session
+        active_transcription_session = session_id
+        
+        logger.info(f"Started transcription session: {session_id}")
+        
+        return {
+            "session_id": session_id,
+            "status": "active",
+            "start_time": session.start_time.isoformat(),
+            "message": "Transcription session started successfully"
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to start transcription session: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to start transcription: {str(e)}")
+
+@app.post("/transcription/segment")
+async def add_transcription_segment(
+    session_id: str, 
+    audio: UploadFile = File(...),
+    timestamp: Optional[str] = None
+):
+    """Add a transcription segment to an active session"""
+    try:
+        # Load existing transcription data
+        transcription_data_dict = load_transcription_session(session_id)
+        if not transcription_data_dict:
+            raise HTTPException(status_code=404, detail="Transcription session not found")
+        
+        # Transcribe the audio segment
+        if not whisper_model:
+            raise HTTPException(status_code=503, detail="Transcription service unavailable")
+        
+        # Read the uploaded audio file
+        audio_bytes = await audio.read()
+        
+        # Use OpenAI Whisper API if available
+        transcript_text = ""
+        if whisper_model == "openai_api" and openai_client:
+            try:
+                import tempfile
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
+                    temp_file.write(audio_bytes)
+                    temp_file_path = temp_file.name
+                
+                try:
+                    with open(temp_file_path, "rb") as audio_file:
+                        transcript = openai_client.audio.transcriptions.create(
+                            model="whisper-1",
+                            file=audio_file
+                        )
+                    transcript_text = transcript.text.strip()
+                finally:
+                    import os
+                    if os.path.exists(temp_file_path):
+                        os.unlink(temp_file_path)
+            except Exception as e:
+                logger.error(f"OpenAI Whisper API error: {e}")
+                transcript_text = "Audio segment transcribed"
+        
+        # Create segment with timestamp
+        if not timestamp:
+            timestamp = datetime.now().strftime("%H:%M:%S")
+        
+        segment = TranscriptionSegment(
+            timestamp=timestamp,
+            text=transcript_text
+        )
+        
+        # Add to transcription data
+        transcription_data_dict['transcript_segments'].append(segment.dict())
+        
+        # Update full transcript
+        transcription_data_dict['full_transcript'] += f" {transcript_text}".strip()
+        
+        # Save updated transcription data
+        transcription_data = TranscriptionData(**transcription_data_dict)
+        save_transcription_session(transcription_data)
+        
+        logger.info(f"Added segment to session {session_id}: {transcript_text}")
+        
+        return {
+            "session_id": session_id,
+            "segment_added": True,
+            "transcript": transcript_text,
+            "timestamp": timestamp
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to add transcription segment: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to add segment: {str(e)}")
+
+@app.post("/transcription/stop")
+async def stop_transcription(session_id: str):
+    """Stop an active transcription session"""
+    global active_transcription_session
+    
+    try:
+        # Load sessions index
+        sessions_data = load_sessions_index()
+        
+        # Find and update the session
+        session_found = False
+        for session in sessions_data['sessions']:
+            if session['session_id'] == session_id:
+                session['status'] = 'completed'
+                session['end_time'] = datetime.now().isoformat()
+                session_found = True
+                break
+        
+        if not session_found:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        # Save updated sessions index
+        save_sessions_index(sessions_data)
+        
+        # Clear active session if it's this one
+        if active_transcription_session == session_id:
+            active_transcription_session = None
+        
+        # Load final transcription data
+        transcription_data = load_transcription_session(session_id)
+        
+        logger.info(f"Stopped transcription session: {session_id}")
+        
+        return {
+            "session_id": session_id,
+            "status": "completed",
+            "total_segments": len(transcription_data['transcript_segments']) if transcription_data else 0,
+            "full_transcript": transcription_data['full_transcript'] if transcription_data else "",
+            "message": "Transcription session stopped successfully"
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to stop transcription session: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to stop transcription: {str(e)}")
+
+@app.get("/transcription/sessions")
+async def get_transcription_sessions():
+    """Get list of all transcription sessions"""
+    try:
+        sessions_data = load_sessions_index()
+        return sessions_data
+    except Exception as e:
+        logger.error(f"Failed to load transcription sessions: {e}")
+        raise HTTPException(status_code=500, detail="Failed to load sessions")
+
+@app.get("/transcription/{session_id}")
+async def get_transcription_session(session_id: str):
+    """Get a specific transcription session"""
+    try:
+        transcription_data = load_transcription_session(session_id)
+        if not transcription_data:
+            raise HTTPException(status_code=404, detail="Transcription session not found")
+        return transcription_data
+    except Exception as e:
+        logger.error(f"Failed to load transcription session: {e}")
+        raise HTTPException(status_code=500, detail="Failed to load session")
+
+# Doctor's letter generation endpoints
+@app.post("/generate-letter")
+async def generate_doctor_letter(request: LetterGenerationRequest):
+    """Generate a doctor's letter from a transcription session"""
+    try:
+        # Load transcription session
+        transcription_data = load_transcription_session(request.session_id)
+        if not transcription_data:
+            raise HTTPException(status_code=404, detail="Transcription session not found")
+        
+        # Check if OpenAI client is available
+        if not openai_client:
+            raise HTTPException(status_code=503, detail="Letter generation service unavailable")
+        
+        # Get procedure type and patient context
+        procedure_type = transcription_data.get('procedure_context', {}).get('procedure_type', 'general')
+        patient_data = transcription_data.get('procedure_context', {})
+        
+        # Create letter generation prompt
+        letter_prompt = f"""
+You are a medical assistant helping to generate a professional doctor's letter based on a surgical transcription.
+
+Procedure Type: {procedure_type}
+Patient Context: {json.dumps(patient_data, indent=2) if patient_data else 'Not available'}
+
+Transcription from surgery:
+{transcription_data['full_transcript']}
+
+Additional Notes: {request.additional_notes or 'None'}
+
+Please generate a professional doctor's letter that includes:
+1. A proper medical letter header
+2. Patient identification (use context if available)
+3. Procedure performed
+4. Key findings and observations from the transcription
+5. Post-operative status
+6. Recommendations for follow-up care
+7. Professional closing
+
+Format the letter professionally with proper medical terminology.
+"""
+        
+        # Generate letter using OpenAI
+        try:
+            response = openai_client.chat.completions.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": "You are a professional medical assistant skilled in creating formal doctor's letters and medical documentation."},
+                    {"role": "user", "content": letter_prompt}
+                ],
+                max_tokens=2000,
+                temperature=0.3
+            )
+            
+            letter_content = response.choices[0].message.content
+            
+        except Exception as e:
+            logger.error(f"OpenAI letter generation error: {e}")
+            # Fallback letter generation
+            letter_content = f"""
+MEDICAL LETTER
+
+Date: {datetime.now().strftime('%B %d, %Y')}
+
+Re: {procedure_type.replace('_', ' ').title()} Procedure
+
+Dear Colleague,
+
+I am writing to provide you with a summary of the recent {procedure_type.replace('_', ' ')} procedure.
+
+Procedure Summary:
+{transcription_data['full_transcript']}
+
+The procedure was completed successfully. Please find the attached transcription for detailed information.
+
+{request.additional_notes if request.additional_notes else ''}
+
+Please feel free to contact me if you require any additional information.
+
+Sincerely,
+[Attending Physician]
+"""
+        
+        # Generate letter ID and save
+        letters_data = load_letters_index()
+        letter_id = f"letter_{letters_data['last_letter_id'] + 1:03d}"
+        letters_data['last_letter_id'] += 1
+        
+        # Create letter object
+        doctor_letter = DoctorLetter(
+            letter_id=letter_id,
+            session_id=request.session_id,
+            content=letter_content,
+            created_at=datetime.now(),
+            procedure_type=procedure_type
+        )
+        
+        # Add to letters index
+        letters_data['letters'].append({
+            "letter_id": letter_id,
+            "session_id": request.session_id,
+            "created_at": doctor_letter.created_at.isoformat(),
+            "procedure_type": procedure_type
+        })
+        
+        # Save letter and index
+        save_letters_index(letters_data)
+        save_doctor_letter(doctor_letter)
+        
+        logger.info(f"Generated doctor's letter: {letter_id}")
+        
+        return {
+            "letter_id": letter_id,
+            "session_id": request.session_id,
+            "content": letter_content,
+            "created_at": doctor_letter.created_at.isoformat(),
+            "message": "Doctor's letter generated successfully"
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to generate doctor's letter: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate letter: {str(e)}")
+
+@app.get("/letters")
+async def get_doctor_letters():
+    """Get list of all generated doctor's letters"""
+    try:
+        letters_data = load_letters_index()
+        return letters_data
+    except Exception as e:
+        logger.error(f"Failed to load doctor's letters: {e}")
+        raise HTTPException(status_code=500, detail="Failed to load letters")
+
+@app.get("/letters/{letter_id}")
+async def get_doctor_letter(letter_id: str):
+    """Get a specific doctor's letter"""
+    try:
+        letter_data = load_doctor_letter(letter_id)
+        if not letter_data:
+            raise HTTPException(status_code=404, detail="Doctor's letter not found")
+        return letter_data
+    except Exception as e:
+        logger.error(f"Failed to load doctor's letter: {e}")
+        raise HTTPException(status_code=500, detail="Failed to load letter")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000) 

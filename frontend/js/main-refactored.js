@@ -31,6 +31,7 @@ import { ProcedureManager } from './procedure-manager.js';
 import { PatientDisplayRenderer } from './patient-display-renderer.js';
 import { VitalsChartManager } from './vitals-chart-manager.js';
 import { SurgicalGridManager } from './surgical-grid-manager.js';
+import { TranscriptionManager } from './transcription-manager.js';
 
 /**
  * Initialize Cornerstone libraries globally
@@ -149,8 +150,8 @@ class ORVoiceAssistant
         // Create the surgical grid manager first
         this.surgicalGrid = new SurgicalGridManager(this.alertManager);
 
-        // Wait a short moment to ensure DOM elements are available
-        await new Promise(resolve => setTimeout(resolve, 10));
+        // Wait for DOM elements to be available
+        await this.waitForElements(['#start-transcription-btn', '#voice-interface']);
 
         // Create UI components
         this.voiceRecorder = new VoiceRecorder(this.apiClient, this.alertManager);
@@ -158,11 +159,46 @@ class ORVoiceAssistant
         this.procedureManager = new ProcedureManager(this.apiClient, this.alertManager);
         this.patientDisplay = new PatientDisplayRenderer(this.alertManager);
         this.vitalsChart = new VitalsChartManager(this.alertManager);
+        this.transcriptionManager = new TranscriptionManager(this.apiClient, this.alertManager);
+
+        // Reinitialize transcription manager UI after all components are loaded
+        setTimeout(() =>
+        {
+            this.transcriptionManager.reinitializeUI();
+        }, 100);
 
         // Initialize command popup
         this.initializeCommandPopup();
 
         console.log('All components initialized');
+    }
+
+    /**
+     * Wait for specific DOM elements to be available
+     */
+    async waitForElements(selectors, maxWait = 5000)
+    {
+        const startTime = Date.now();
+
+        while (Date.now() - startTime < maxWait)
+        {
+            const allElementsFound = selectors.every(selector =>
+            {
+                const element = document.querySelector(selector);
+                return element !== null;
+            });
+
+            if (allElementsFound)
+            {
+                console.log('All required elements found:', selectors);
+                return;
+            }
+
+            // Wait 50ms before checking again
+            await new Promise(resolve => setTimeout(resolve, 50));
+        }
+
+        console.warn('Some elements not found within timeout:', selectors);
     }
 
     /**
@@ -301,18 +337,43 @@ class ORVoiceAssistant
      */
     initializeViewers()
     {
-        // Initialize VTK viewer
-        const vtkContainer = document.querySelector('.vtk-viewer');
-        if (vtkContainer)
+        // Use the VTK viewer instance created by SurgicalGridManager instead of creating a duplicate
+        // Wait for the surgical grid to initialize the VTK viewer
+        const checkForVtkViewer = () =>
         {
-            this.vtkViewer = new VtkViewer(
-                vtkContainer,
-                (message, level) => this.alertManager.showAlert(message, level)
-            );
-        } else
+            if (window.activeVtkViewer)
+            {
+                this.vtkViewer = window.activeVtkViewer;
+                console.log('🎯 Using SurgicalGridManager VTK viewer instance:', this.vtkViewer);
+            } else
+            {
+                // If surgical grid hasn't created it yet, create our own as fallback
+                const vtkContainer = document.querySelector('.vtk-viewer');
+                if (vtkContainer)
+                {
+                    this.vtkViewer = new VtkViewer(
+                        vtkContainer,
+                        (message, level) => this.alertManager.showAlert(message, level)
+                    );
+                    // Set as global reference if none exists
+                    if (!window.activeVtkViewer)
+                    {
+                        window.activeVtkViewer = this.vtkViewer;
+                    }
+                    console.log('🎯 Created fallback VTK viewer instance:', this.vtkViewer);
+                } else
+                {
+                    console.error("VTK viewer container not found");
+                    this.alertManager.showCritical("Could not initialize VTK viewer: container not found.");
+                }
+            }
+        };
+
+        // Check immediately, and if not available, wait a bit for surgical grid
+        checkForVtkViewer();
+        if (!this.vtkViewer)
         {
-            console.error("VTK viewer container not found");
-            this.alertManager.showCritical("Could not initialize VTK viewer: container not found.");
+            setTimeout(checkForVtkViewer, 100);
         }
 
         // Initialize DICOM viewer
@@ -400,6 +461,13 @@ class ORVoiceAssistant
                 return gridResult;
             }
 
+            // Check for transcription commands first
+            if (this.isTranscriptionCommand(command))
+            {
+                await this.handleTranscriptionCommand(command);
+                return { success: true, command_type: 'transcription' };
+            }
+
             // Try API processing for medical commands
             const result = await this.apiClient.processCommand(
                 command,
@@ -429,6 +497,80 @@ class ORVoiceAssistant
             // Use fallback processing
             this.processFallbackCommand(command);
             return { error: error.message, response: 'Error processing command. Please try again.' };
+        }
+    }
+
+    /**
+     * Check if command is a transcription command
+     */
+    isTranscriptionCommand(command)
+    {
+        const cmd = command.toLowerCase();
+        return cmd.includes('start transcription') ||
+            cmd.includes('stop transcription') ||
+            (cmd.includes('create') && cmd.includes('doctor') && cmd.includes('letter')) ||
+            (cmd.includes('show') && cmd.includes('doctor') && cmd.includes('letter'));
+    }
+
+    /**
+     * Handle transcription-specific commands
+     */
+    async handleTranscriptionCommand(command)
+    {
+        const cmd = command.toLowerCase();
+
+        try
+        {
+            if (cmd.includes('start transcription'))
+            {
+                await this.transcriptionManager.startTranscription(
+                    this.procedureManager.getCurrentProcedure()
+                );
+                this.chatInterface.addAssistantMessage(
+                    'Transcription started successfully. Recording surgery audio...',
+                    'Transcription'
+                );
+            }
+            else if (cmd.includes('stop transcription'))
+            {
+                await this.transcriptionManager.stopTranscription();
+                this.chatInterface.addAssistantMessage(
+                    'Transcription stopped and saved. You can now generate a doctor\'s letter.',
+                    'Transcription'
+                );
+            }
+            else if (cmd.includes('create') && cmd.includes('doctor') && cmd.includes('letter'))
+            {
+                await this.transcriptionManager.generateDoctorLetter();
+                this.chatInterface.addAssistantMessage(
+                    'Doctor\'s letter has been generated from the transcription.',
+                    'Transcription'
+                );
+            }
+            else if (cmd.includes('show') && cmd.includes('doctor') && cmd.includes('letter'))
+            {
+                if (this.transcriptionManager.letterDisplay)
+                {
+                    this.transcriptionManager.letterDisplay.style.display = 'block';
+                    this.chatInterface.addAssistantMessage(
+                        'Doctor\'s letter is now displayed.',
+                        'Transcription'
+                    );
+                } else
+                {
+                    this.chatInterface.addAssistantMessage(
+                        'No doctor\'s letter has been generated yet. Please create one first.',
+                        'Transcription'
+                    );
+                }
+            }
+        } catch (error)
+        {
+            console.error('Transcription command error:', error);
+            this.chatInterface.addAssistantMessage(
+                `Transcription error: ${error.message}`,
+                'Error'
+            );
         }
     }
 

@@ -440,16 +440,13 @@ export class VoiceRecorder
                 <label class="listening-toggle-label">
                     <input type="checkbox" id="listening-toggle" class="listening-checkbox">
                     <span class="listening-toggle-text">Continuous Listening</span>
-                    <small class="listening-help">Say "Ophelia" to start commands</small>
                 </label>
+                <div class="listening-status" id="listening-status">Ready</div>
             </div>
             <button id="stop-listening-btn" class="stop-listening-btn" style="display: none;">
                 <span class="stop-icon">⏹</span>
                 Stop Listening
             </button>
-            <div class="listening-status" id="listening-status">
-                Ready
-            </div>
         `;
 
         // Insert at the beginning of the voice interface
