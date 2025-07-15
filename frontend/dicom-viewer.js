@@ -39,12 +39,12 @@ export class DicomViewer
             this.setupUIEventListeners();
             await this.refreshDicomSeriesList();
             this.isInitialized = true;
-            console.log('DicomViewer initialized successfully.');
+            
             // Auto-load a default series for demonstration
             this.loadDicomSeries('65244080');
         } catch (error)
         {
-            console.error('Failed to initialize DicomViewer:', error);
+            
             if (this.onAlert)
             {
                 this.onAlert('DICOM Viewer failed to initialize. See console for details.', 'error');
@@ -167,7 +167,7 @@ export class DicomViewer
             cornerstoneTools.addStackStateManager(this.dicomElement, ['stack']);
             cornerstoneTools.addToolState(this.dicomElement, 'stack', stack);
 
-            console.log(`Successfully loaded series ${seriesId} with ${this.imageIds.length} images.`);
+            
             if (this.onAlert)
             {
                 this.onAlert(`Loaded series ${seriesId}`, 'success');
@@ -175,7 +175,7 @@ export class DicomViewer
 
         } catch (error)
         {
-            console.error(`Error loading DICOM series ${seriesId}:`, error);
+            
             this.updateDicomInfo(`Error loading series: ${error.message}`);
             if (this.onAlert)
             {
@@ -254,7 +254,7 @@ export class DicomViewer
             this.populateDicomSeriesSelect(data.series);
         } catch (error)
         {
-            console.error('Error fetching DICOM series:', error);
+            
             if (this.onAlert) this.onAlert(error.message, 'warning');
         }
     }
@@ -295,6 +295,6 @@ export class DicomViewer
         }
         this.isInitialized = false;
         // Consider removing other event listeners if the component is truly being destroyed.
-        console.log("DicomViewer destroyed.");
+        
     }
 }

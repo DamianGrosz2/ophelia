@@ -32,6 +32,12 @@ export class VtkViewer
         this.initializeElements();
         this.setupEventListeners();
         this.refreshVtkFileList();
+
+        // Load CPO_ist.vtk by default after a short delay to ensure everything is initialized
+        setTimeout(() =>
+        {
+            this.loadVtkFile('CPO_ist.vtk');
+        }, 1000);
     }
 
     initializeElements()
@@ -62,7 +68,7 @@ export class VtkViewer
         const vtkContainer = document.querySelector('.vtk-viewer');
         if (!vtkContainer)
         {
-            console.warn('VTK viewer container not found');
+            
             return;
         }
 
@@ -82,7 +88,7 @@ export class VtkViewer
         camera.setFocalPoint(0, 0, 0);
         camera.setViewUp(0, 1, 0);
 
-        console.log('VTK viewer initialized');
+        
     }
 
     setupVtkControls()
@@ -109,14 +115,14 @@ export class VtkViewer
     {
         if (!this.vtkViewer)
         {
-            console.error('VTK viewer not initialized');
+            
             return;
         }
 
         try
         {
             const url = `${API_BASE_URL}/vtk/${filename}`;
-            console.log(`Loading VTK file from: ${url}`);
+            
 
             // Load the data
             const response = await fetch(url);
@@ -125,29 +131,29 @@ export class VtkViewer
                 throw new Error(`Failed to load VTK file: ${response.statusText}`);
             }
 
-            console.log('VTK file fetch successful, parsing...');
+            
 
             // Determine reader based on file extension
             const isXML = filename.toLowerCase().endsWith('.vtp') || filename.toLowerCase().endsWith('.vtu');
-            console.log(`Using ${isXML ? 'XML' : 'Legacy'} reader for ${filename}`);
+            
 
             const reader = isXML ? vtkXMLPolyDataReader.newInstance() : vtkPolyDataReader.newInstance();
 
             const arrayBuffer = await response.arrayBuffer();
-            console.log(`ArrayBuffer size: ${arrayBuffer.byteLength} bytes`);
+            
 
             // For legacy VTK files, we need to convert to string first
             if (!isXML)
             {
                 const text = new TextDecoder().decode(arrayBuffer);
-                console.log('VTK file content preview:', text.substring(0, 200));
+                
                 reader.parseAsText(text);
             } else
             {
                 reader.parseAsArrayBuffer(arrayBuffer);
             }
 
-            console.log('VTK file parsed, creating mapper...');
+            
 
             // Create mapper and actor
             const mapper = vtkMapper.newInstance();
@@ -172,13 +178,13 @@ export class VtkViewer
                 vtkInfo.textContent = `Loaded: ${filename}`;
             }
 
-            console.log(`VTK file ${filename} loaded successfully`);
+            
             return true;
 
         } catch (error)
         {
-            console.error('Detailed VTK loading error:', error);
-            console.error('Error stack:', error.stack);
+            
+            
             const vtkInfo = document.querySelector('.vtk-info');
             if (vtkInfo)
             {
@@ -247,11 +253,11 @@ export class VtkViewer
                 this.populateVtkFileSelect(data.files);
             } else
             {
-                console.warn('Failed to fetch VTK file list');
+                
             }
         } catch (error)
         {
-            console.error('Error fetching VTK files:', error);
+            
         }
     }
 
@@ -267,10 +273,17 @@ export class VtkViewer
             const option = document.createElement('option');
             option.value = file;
             option.textContent = file;
+
+            // Auto-select CPO_ist.vtk if it exists
+            if (file === 'CPO_ist.vtk')
+            {
+                option.selected = true;
+            }
+
             this.vtkFileSelect.appendChild(option);
         });
 
-        console.log(`Loaded ${files.length} VTK files`);
+        
     }
 
     async loadSelectedVtkFile()

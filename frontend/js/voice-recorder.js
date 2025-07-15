@@ -6,6 +6,7 @@ export class VoiceRecorder
 {
     constructor(apiClient, alertManager)
     {
+        console.log('VoiceRecorder constructor called');
         this.apiClient = apiClient;
         this.alertManager = alertManager;
 
@@ -39,21 +40,19 @@ export class VoiceRecorder
         this.onRecordingStop = null;
         this.onWakeWordDetected = null;
 
-        this.initializeElements();
-        this.setupEventListeners();
         this.initializeWakeWordDetection();
+        console.log('VoiceRecorder constructor complete');
     }
 
     /**
-     * Initialize DOM elements
+     * Initialize DOM elements and event listeners
      */
-    initializeElements()
+    initialize()
     {
-        this.listeningToggle = document.getElementById('listening-toggle');
-        this.stopListeningBtn = document.getElementById('stop-listening-btn');
-
-        // Create listening controls if they don't exist
+        console.log('VoiceRecorder initialize() called');
         this.createListeningControls();
+        this.setupEventListeners();
+        console.log('VoiceRecorder initialization complete');
     }
 
     /**
@@ -61,6 +60,8 @@ export class VoiceRecorder
  */
     setupEventListeners()
     {
+        console.log('setupEventListeners() called');
+
         // Keyboard shortcut (Ctrl+Space) - keep for manual recording if needed
         document.addEventListener('keydown', (e) =>
         {
@@ -78,19 +79,41 @@ export class VoiceRecorder
             }
         });
 
-        // Listening toggle event
-        if (this.listeningToggle)
+        // Use event delegation to handle toggle changes (survives element replacement)
+        // Only set up once to prevent duplicates
+        if (!this.delegationSetup)
         {
-            this.listeningToggle.addEventListener('change', (e) =>
+            console.log('🔄 Setting up event delegation for listening toggle');
+            this.delegationSetup = true;
+
+            document.addEventListener('change', (e) =>
             {
-                if (e.target.checked)
+                if (e.target && e.target.id === 'listening-toggle')
                 {
-                    this.startContinuousListening();
-                } else
-                {
-                    this.stopContinuousListening();
+                    console.log('🎯 DELEGATED Toggle changed:', e.target.checked);
+                    if (e.target.checked)
+                    {
+                        console.log('🎯 Starting continuous listening...');
+                        this.startContinuousListening();
+                    } else
+                    {
+                        console.log('🎯 Stopping continuous listening...');
+                        this.stopContinuousListening();
+                    }
                 }
             });
+
+            // Also add click listener for debugging
+            document.addEventListener('click', (e) =>
+            {
+                if (e.target && e.target.id === 'listening-toggle')
+                {
+                    console.log('🎯 DELEGATED Toggle clicked!', e.target.checked);
+                }
+            });
+        } else
+        {
+            console.log('🔄 Event delegation already set up, skipping...');
         }
 
         // Stop listening button
@@ -393,12 +416,32 @@ export class VoiceRecorder
      */
     createListeningControls()
     {
+        console.log('Creating listening controls...');
+
         // Find the voice interface container
         const voiceInterface = document.querySelector('.voice-interface');
-        if (!voiceInterface) return;
+        console.log('Voice interface found:', voiceInterface);
+        if (!voiceInterface)
+        {
+            console.error('Voice interface container not found!');
+            return;
+        }
 
         // Check if controls already exist
-        if (document.getElementById('listening-controls')) return;
+        if (document.getElementById('listening-controls'))
+        {
+            console.log('Listening controls already exist, updating element references...');
+            // Update element references even if controls already exist
+            this.listeningToggle = document.getElementById('listening-toggle');
+            this.stopListeningBtn = document.getElementById('stop-listening-btn');
+            this.listeningStatus = document.getElementById('listening-status');
+
+            console.log('Element references updated for existing controls:');
+            console.log('  listeningToggle:', this.listeningToggle);
+            console.log('  stopListeningBtn:', this.stopListeningBtn);
+            console.log('  listeningStatus:', this.listeningStatus);
+            return;
+        }
 
         // Create listening controls container
         const controlsContainer = document.createElement('div');
@@ -435,6 +478,11 @@ export class VoiceRecorder
         this.listeningToggle = document.getElementById('listening-toggle');
         this.stopListeningBtn = document.getElementById('stop-listening-btn');
         this.listeningStatus = document.getElementById('listening-status');
+
+        console.log('Element references updated:');
+        console.log('  listeningToggle:', this.listeningToggle);
+        console.log('  stopListeningBtn:', this.stopListeningBtn);
+        console.log('  listeningStatus:', this.listeningStatus);
     }
 
     /**
@@ -442,6 +490,10 @@ export class VoiceRecorder
      */
     initializeWakeWordDetection()
     {
+        console.log('Initializing wake word detection...');
+        console.log('webkitSpeechRecognition available:', 'webkitSpeechRecognition' in window);
+        console.log('SpeechRecognition available:', 'SpeechRecognition' in window);
+
         if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window))
         {
             console.warn('Speech recognition not supported in this browser');
@@ -450,7 +502,9 @@ export class VoiceRecorder
         }
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        console.log('SpeechRecognition constructor:', SpeechRecognition);
         this.recognition = new SpeechRecognition();
+        console.log('Speech recognition instance created:', this.recognition);
 
         this.recognition.continuous = true;
         this.recognition.interimResults = true;
@@ -590,23 +644,37 @@ export class VoiceRecorder
     }
 
     /**
-     * Start continuous listening for wake word
-     */
+ * Start continuous listening for wake word
+ */
     async startContinuousListening()
     {
+        console.log('startContinuousListening called');
+        console.log('this.recognition:', this.recognition);
+        console.log('this.isListening:', this.isListening);
+
         if (!this.recognition)
         {
+            console.error('Speech recognition not available - this.recognition is null');
             this.alertManager?.showWarning('Speech recognition not available');
+            return;
+        }
+
+        // Prevent starting if already listening
+        if (this.isListening)
+        {
+            console.log('Already listening, skipping start');
             return;
         }
 
         try
         {
+            console.log('Setting isListening to true and starting recognition...');
             this.isListening = true;
             this.recognition.start();
             this.updateListeningStatus('Listening for "Ophelia"...');
             this.updateListeningUI(true);
             this.alertManager?.showSuccess('Continuous listening started - say "Ophelia" to begin');
+            console.log('Continuous listening started successfully');
         } catch (error)
         {
             console.error('Error starting continuous listening:', error);
@@ -678,8 +746,11 @@ export class VoiceRecorder
      */
     restartWakeWordListening()
     {
+        console.log('restartWakeWordListening called, isListening:', this.isListening, 'isWakeWordMode:', this.isWakeWordMode);
+
         if (!this.isListening || !this.recognition)
         {
+            console.log('Not restarting - not listening or no recognition');
             return;
         }
 
@@ -692,6 +763,7 @@ export class VoiceRecorder
             {
                 try
                 {
+                    console.log('Attempting to restart recognition...');
                     this.recognition.start();
                     this.updateListeningStatus('Listening for "Ophelia"...');
                     console.log('Wake word recognition restarted after command');
@@ -699,24 +771,33 @@ export class VoiceRecorder
                 {
                     console.error('Error restarting wake word recognition after command:', error);
 
-                    // Try again with a longer delay
-                    setTimeout(() =>
+                    // Only retry if the error isn't "already started"
+                    if (error.message && !error.message.includes('already started'))
                     {
-                        if (this.isListening && !this.isWakeWordMode)
+                        // Try again with a longer delay
+                        setTimeout(() =>
                         {
-                            try
+                            if (this.isListening && !this.isWakeWordMode)
                             {
-                                this.recognition.start();
-                                this.updateListeningStatus('Listening for "Ophelia"...');
-                                console.log('Wake word recognition restarted after retry');
-                            } catch (retryError)
-                            {
-                                console.error('Failed to restart wake word recognition after command retry:', retryError);
-                                this.updateListeningStatus('Wake word detection failed - try toggling off/on');
-                                this.alertManager?.showWarning('Wake word detection failed to restart. Please toggle continuous listening off and on.');
+                                try
+                                {
+                                    console.log('Retry attempt to restart recognition...');
+                                    this.recognition.start();
+                                    this.updateListeningStatus('Listening for "Ophelia"...');
+                                    console.log('Wake word recognition restarted after retry');
+                                } catch (retryError)
+                                {
+                                    console.error('Failed to restart wake word recognition after command retry:', retryError);
+                                    this.updateListeningStatus('Wake word detection failed - try toggling off/on');
+                                    this.alertManager?.showWarning('Wake word detection failed to restart. Please toggle continuous listening off and on.');
+                                }
                             }
-                        }
-                    }, 2000);
+                        }, 2000);
+                    } else
+                    {
+                        console.log('Recognition already started, continuing...');
+                        this.updateListeningStatus('Listening for "Ophelia"...');
+                    }
                 }
             }
         }, 500);
