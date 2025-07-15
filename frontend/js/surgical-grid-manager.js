@@ -384,12 +384,12 @@ export class SurgicalGridManager
             }
 
             console.log(`🎯 No grid command pattern matched for: "${cmd}"`);
-            return false;
+            return { success: false, message: null };
         } catch (error)
         {
             console.error('Error processing grid command:', error);
             this.showFeedback('Error processing command', 'error');
-            return false;
+            return { success: false, message: 'Error processing grid command' };
         }
     }
 
@@ -405,7 +405,7 @@ export class SurgicalGridManager
         if (!openMatch)
         {
             console.log(`🎯 Failed to match OPEN command pattern`);
-            return false;
+            return { success: false, message: null };
         }
 
         const programName = openMatch[1].trim();
@@ -418,8 +418,9 @@ export class SurgicalGridManager
         if (!program)
         {
             console.log(`🎯 Program not found for: "${programName}"`);
-            this.showFeedback(`Program "${programName}" not found`, 'error');
-            return false;
+            const message = `Program "${programName}" not found`;
+            this.showFeedback(message, 'error');
+            return { success: false, message };
         }
 
         console.log(`🎯 Found program: "${program}"`);
@@ -428,8 +429,9 @@ export class SurgicalGridManager
         if (positions.length === 0)
         {
             console.log(`🎯 No positions found for: "${locationText}"`);
-            this.showFeedback(`Location "${locationText}" not recognized`, 'error');
-            return false;
+            const message = `Location "${locationText}" not recognized`;
+            this.showFeedback(message, 'error');
+            return { success: false, message };
         }
 
         console.log(`🎯 Found positions: [${positions.join(', ')}]`);
@@ -439,21 +441,24 @@ export class SurgicalGridManager
         if (unavailable.length > 0)
         {
             console.log(`🎯 Unavailable cells: [${unavailable.join(', ')}]`);
-            this.showFeedback(`Cells ${unavailable.join(', ')} are not empty`, 'error');
-            return false;
+            const message = `Cells ${unavailable.join(', ')} are not empty`;
+            this.showFeedback(message, 'error');
+            return { success: false, message };
         }
 
         console.log(`🎯 All cells available, proceeding to open program`);
+
+        const successMessage = `Opening ${programName} in ${positions.join(', ')}`;
 
         // Highlight then execute
         this.highlightCells(positions, 'success');
         setTimeout(() =>
         {
             this.openProgram(program, positions);
-            this.showFeedback(`Opened ${programName} in ${positions.join(', ')}`, 'success');
+            this.showFeedback(successMessage, 'success');
         }, 1000);
 
-        return true;
+        return { success: true, message: successMessage };
     }
 
     /**
@@ -1112,7 +1117,7 @@ export class SurgicalGridManager
      */
     loadContentIntoCell(position, program)
     {
-
+        console.log(`🎯 loadContentIntoCell: ${program} -> ${position}`);
 
         const cellContent = document.getElementById(`content-${position}`);
         if (!cellContent)
@@ -1121,18 +1126,15 @@ export class SurgicalGridManager
             return;
         }
 
-
         // Clear existing content first
         cellContent.innerHTML = '';
-
 
         // Find the corresponding component element
         const sourceComponent = document.getElementById(program);
 
-
         if (sourceComponent)
         {
-            // Clone the component content but make it visible
+            // Standard component cloning for all components
             const clone = sourceComponent.cloneNode(true);
             clone.id = `${program}-${position}`;
 
@@ -1181,28 +1183,8 @@ export class SurgicalGridManager
             this.updateCellAppearance(position);
         } else
         {
-
-            const allComponents = document.querySelectorAll('[id]');
-
-
-            const relevantComponents = [];
-            allComponents.forEach(el =>
-            {
-                if (el.id.includes('panel') || el.id.includes('viewer') || el.id.includes('interface') || el.id.includes('monitoring'))
-                {
-                    relevantComponents.push(el.id);
-
-                }
-            });
-
-            if (relevantComponents.length === 0)
-            {
-
-
-            }
-
+            console.log(`🎯 Source component not found: ${program}, trying direct loading...`);
             // Try to load component content directly
-
             this.loadComponentDirectly(position, program);
         }
     }
@@ -1339,91 +1321,204 @@ export class SurgicalGridManager
     }
 
     /**
-     * Initialize component functionality in a cell
+     * Initialize component-specific functionality in grid cells
      */
     initializeComponentInCell(program, position)
     {
-        // Component-specific initialization
+        console.log(`🎯 Initializing ${program} functionality in position: ${position}`);
+
         switch (program)
         {
-            case 'vtk-viewer':
-                // Initialize VTK viewer and load CPO_ist.vtk by default
-                setTimeout(() =>
-                {
-                    const vtkContainer = document.querySelector(`#content-${position} .vtk-viewer`);
-                    if (vtkContainer)
-                    {
-                        // Ensure the VTK container has proper dimensions
-                        vtkContainer.style.width = '100%';
-                        vtkContainer.style.height = '100%';
-                        vtkContainer.style.minHeight = '400px';
-                        vtkContainer.style.position = 'relative';
-
-                        console.log('🎯 VTK container setup for position:', position);
-                        console.log('🎯 Container dimensions before init:', {
-                            width: vtkContainer.offsetWidth,
-                            height: vtkContainer.offsetHeight
-                        });
-
-                        // Initialize VTK viewer in this cell
-                        const vtkViewer = new VtkViewer(
-                            vtkContainer,
-                            (message, level) => this.alertManager?.showAlert(message, level)
-                        );
-
-                        // Store reference globally so main app can access it
-                        window.activeVtkViewer = vtkViewer;
-                        console.log('🎯 VtkViewer instance stored globally:', vtkViewer);
-
-                        // Force a resize after a brief delay to ensure proper container sizing
-                        setTimeout(() =>
-                        {
-                            if (vtkViewer && vtkViewer.resize)
-                            {
-                                vtkViewer.resize();
-                                console.log('🎯 VTK viewer resized for grid cell');
-                            }
-                        }, 100);
-
-                        // The VTK viewer will automatically load CPO_ist.vtk due to our earlier changes
-                    } else
-                    {
-                        console.error('Could not find .vtk-viewer for VTK viewer in position:', position);
-                    }
-                }, 500);
-                break;
-            case 'dicom-viewer':
-                // Initialize DICOM viewer if needed
-                setTimeout(() =>
-                {
-                    // Find the panel content container which contains the .dicom-viewer element
-                    const panelContent = document.querySelector(`#content-${position} .panel-content`);
-                    if (panelContent)
-                    {
-                        // Initialize DICOM viewer in this cell, passing the panel-content container
-                        const dicomViewer = new DicomViewer(
-                            panelContent,
-                            (message, level) => this.alertManager?.showAlert(message, level)
-                        );
-                    } else
-                    {
-                        console.error('Could not find .panel-content for DICOM viewer in position:', position);
-                    }
-                }, 500);
-                break;
-            case 'monitoring-panel':
-                // Initialize charts if needed
-                break;
             case 'patient-panel':
-                // Re-initialize patient panel collapsible functionality
-                setTimeout(() =>
-                {
-                    this.initializePatientPanelInCell(position);
-                }, 500);
+                this.initializePatientPanelInCell(position);
                 break;
+
+            case 'voice-interface':
+                this.initializeVoiceInterfaceInCell(position);
+                break;
+
+            case 'monitoring-panel':
+                this.initializeMonitoringPanelInCell(position);
+                break;
+
+            case 'vtk-viewer':
+                this.initializeVtkViewerInCell(position);
+                break;
+
+            case 'dicom-viewer':
+                this.initializeDicomViewerInCell(position);
+                break;
+
             default:
-                break;
+                console.log(`No specific initialization needed for: ${program}`);
         }
+    }
+
+    /**
+     * Initialize voice interface functionality in a grid cell
+     * Set up chat functionality to work with the main chat interface
+     */
+    initializeVoiceInterfaceInCell(position)
+    {
+        console.log('🎯 Initializing voice interface functionality in position:', position);
+
+        const cellContent = document.getElementById(`content-${position}`);
+        if (!cellContent)
+        {
+            console.error('❌ Cell content not found for voice interface initialization:', position);
+            return;
+        }
+
+        // Find the cloned elements in this specific cell
+        const clonedSendBtn = cellContent.querySelector('.send-button');
+        const clonedTextInput = cellContent.querySelector('.text-input');
+
+        if (clonedSendBtn && clonedTextInput)
+        {
+            console.log('🎯 Setting up chat functionality for cloned voice interface');
+
+            // Remove any existing event listeners to avoid duplicates
+            const newSendBtn = clonedSendBtn.cloneNode(true);
+            clonedSendBtn.parentNode.replaceChild(newSendBtn, clonedSendBtn);
+
+            const newTextInput = clonedTextInput.cloneNode(true);
+            clonedTextInput.parentNode.replaceChild(newTextInput, clonedTextInput);
+
+            // Add event listeners that connect to the main application's chat interface
+            newSendBtn.addEventListener('click', () =>
+            {
+                this.handleClonedChatSend(newTextInput, newSendBtn);
+            });
+
+            newTextInput.addEventListener('keypress', (e) =>
+            {
+                if (e.key === 'Enter' && !e.shiftKey)
+                {
+                    e.preventDefault();
+                    this.handleClonedChatSend(newTextInput, newSendBtn);
+                }
+            });
+
+            console.log('✅ Voice interface chat functionality initialized for position:', position);
+        } else
+        {
+            console.error('❌ Could not find chat elements in cloned voice interface');
+        }
+    }
+
+    /**
+     * Handle send button click from cloned voice interface
+     */
+    async handleClonedChatSend(textInput, sendBtn)
+    {
+        const message = textInput.value.trim();
+        if (!message) return;
+
+        console.log('🎯 Handling cloned chat send:', message);
+
+        // Disable button temporarily
+        sendBtn.disabled = true;
+        sendBtn.textContent = 'Sending...';
+
+        try
+        {
+            // Find the chat history in this cloned interface
+            const clonedChatHistory = textInput.closest('.voice-interface')?.querySelector('.chat-history');
+
+            // Add user message to the cloned chat interface immediately
+            if (clonedChatHistory)
+            {
+                this.addMessageToClonedChat(clonedChatHistory, 'user', message, 'Text');
+            }
+
+            // Get the main chat interface from the global application
+            const mainApp = window.orVoiceAssistant;
+            if (mainApp && mainApp.chatInterface)
+            {
+                // Add message through the main chat interface (for consistency)
+                mainApp.chatInterface.addUserMessage(message, 'Text');
+
+                // Clear the input
+                textInput.value = '';
+
+                // Process the command through the main application
+                const result = await mainApp.processCommand(message);
+
+                // If we got a result and have a cloned chat history, also update the cloned interface
+                if (result && clonedChatHistory)
+                {
+                    // Handle different types of results
+                    if (result.response)
+                    {
+                        // API result with response
+                        this.addMessageToClonedChat(clonedChatHistory, 'assistant', result.response, 'Assistant');
+                    }
+                    else if (result.message)
+                    {
+                        // Grid command result
+                        const source = result.success ? 'Surgical Grid' : 'Surgical Grid Error';
+                        this.addMessageToClonedChat(clonedChatHistory, 'assistant', result.message, source);
+                    }
+                    else if (result.error)
+                    {
+                        // Error result
+                        this.addMessageToClonedChat(clonedChatHistory, 'assistant', result.response || 'Error processing command.', 'System');
+                    }
+                }
+            } else
+            {
+                console.error('❌ Main application or chat interface not found');
+            }
+        } catch (error)
+        {
+            console.error('Error sending message from cloned interface:', error);
+
+            // Add error message to cloned chat if possible
+            const clonedChatHistory = textInput.closest('.voice-interface')?.querySelector('.chat-history');
+            if (clonedChatHistory)
+            {
+                this.addMessageToClonedChat(clonedChatHistory, 'assistant', 'Sorry, there was an error processing your message. Please try again.', 'System');
+            }
+        } finally
+        {
+            // Re-enable button
+            sendBtn.disabled = false;
+            sendBtn.textContent = 'Send';
+        }
+    }
+
+    /**
+     * Add a message to a cloned chat interface
+     */
+    addMessageToClonedChat(chatHistory, sender, message, source = 'System')
+    {
+        if (!chatHistory) return;
+
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `chat-message ${sender}`;
+
+        const now = new Date();
+        const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        // Escape HTML to prevent XSS
+        const escapeHtml = (text) =>
+        {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        };
+
+        messageDiv.innerHTML = `
+            <div class="message-content">
+                <div class="message-text">${escapeHtml(message)}</div>
+                <div class="message-time">${source} • ${timeString}</div>
+            </div>
+        `;
+
+        chatHistory.appendChild(messageDiv);
+
+        // Scroll to bottom
+        chatHistory.scrollTop = chatHistory.scrollHeight;
     }
 
     /**
@@ -2536,5 +2631,93 @@ export class SurgicalGridManager
         }
 
         this.hideReopenOverlay();
+    }
+
+    /**
+     * Initialize VTK viewer functionality in a grid cell
+     */
+    initializeVtkViewerInCell(position)
+    {
+        console.log('🎯 Initializing VTK viewer functionality in position:', position);
+
+        // Initialize VTK viewer and load CPO_ist.vtk by default
+        setTimeout(() =>
+        {
+            const vtkContainer = document.querySelector(`#content-${position} .vtk-viewer`);
+            if (vtkContainer)
+            {
+                // Ensure the VTK container has proper dimensions
+                vtkContainer.style.width = '100%';
+                vtkContainer.style.height = '100%';
+                vtkContainer.style.minHeight = '400px';
+                vtkContainer.style.position = 'relative';
+
+                console.log('🎯 VTK container setup for position:', position);
+                console.log('🎯 Container dimensions before init:', {
+                    width: vtkContainer.offsetWidth,
+                    height: vtkContainer.offsetHeight
+                });
+
+                // Initialize VTK viewer in this cell
+                const vtkViewer = new VtkViewer(
+                    vtkContainer,
+                    (message, level) => this.alertManager?.showAlert(message, level)
+                );
+
+                // Store reference globally so main app can access it
+                window.activeVtkViewer = vtkViewer;
+                console.log('🎯 VtkViewer instance stored globally:', vtkViewer);
+
+                // Force a resize after a brief delay to ensure proper container sizing
+                setTimeout(() =>
+                {
+                    if (vtkViewer && vtkViewer.resize)
+                    {
+                        vtkViewer.resize();
+                        console.log('🎯 VTK viewer resized for grid cell');
+                    }
+                }, 100);
+
+                // The VTK viewer will automatically load CPO_ist.vtk due to our earlier changes
+            } else
+            {
+                console.error('Could not find .vtk-viewer for VTK viewer in position:', position);
+            }
+        }, 500);
+    }
+
+    /**
+     * Initialize DICOM viewer functionality in a grid cell
+     */
+    initializeDicomViewerInCell(position)
+    {
+        console.log('🎯 Initializing DICOM viewer functionality in position:', position);
+
+        // Initialize DICOM viewer if needed
+        setTimeout(() =>
+        {
+            // Find the panel content container which contains the .dicom-viewer element
+            const panelContent = document.querySelector(`#content-${position} .panel-content`);
+            if (panelContent)
+            {
+                // Initialize DICOM viewer in this cell, passing the panel-content container
+                const dicomViewer = new DicomViewer(
+                    panelContent,
+                    (message, level) => this.alertManager?.showAlert(message, level)
+                );
+            } else
+            {
+                console.error('Could not find .panel-content for DICOM viewer in position:', position);
+            }
+        }, 500);
+    }
+
+    /**
+     * Initialize monitoring panel functionality in a grid cell
+     */
+    initializeMonitoringPanelInCell(position)
+    {
+        console.log('🎯 Initializing monitoring panel functionality in position:', position);
+        // Initialize charts if needed - implementation can be added here
     }
 } 

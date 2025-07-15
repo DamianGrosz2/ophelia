@@ -339,6 +339,9 @@ class ORVoiceAssistant
     {
         try
         {
+            // Make this instance globally accessible for cloned components
+            window.orVoiceAssistant = this;
+
             // Load initial procedure data
             await this.procedureManager.loadProcedureData();
 
@@ -375,10 +378,26 @@ class ORVoiceAssistant
             console.log('Processing command:', command);
 
             // First check if it's a surgical grid command
-            if (this.surgicalGrid.processGridCommand(command))
+            const gridResult = this.surgicalGrid.processGridCommand(command);
+            if (gridResult.success === true || gridResult.message !== null)
             {
-                // Grid command was handled, no need to process further
-                return;
+                // Grid command was recognized (either successful or failed)
+                if (gridResult.success)
+                {
+                    // Success case
+                    this.chatInterface.addAssistantMessage(
+                        gridResult.message || `Grid command executed: "${command}"`,
+                        'Surgical Grid'
+                    );
+                } else
+                {
+                    // Error case with specific message
+                    this.chatInterface.addAssistantMessage(
+                        `Grid command error: ${gridResult.message}`,
+                        'Surgical Grid'
+                    );
+                }
+                return gridResult;
             }
 
             // Try API processing for medical commands
@@ -402,11 +421,14 @@ class ORVoiceAssistant
                 this.updateVisualData(result.visual_data);
             }
 
+            return result;
+
         } catch (error)
         {
             console.error('API processing failed, using fallback:', error);
             // Use fallback processing
             this.processFallbackCommand(command);
+            return { error: error.message, response: 'Error processing command. Please try again.' };
         }
     }
 

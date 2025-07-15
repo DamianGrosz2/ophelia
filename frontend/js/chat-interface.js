@@ -32,6 +32,8 @@ export class ChatInterface
      */
     initializeElements()
     {
+        console.log('🎯 ChatInterface: Looking for DOM elements...');
+
         this.chatHistory = document.getElementById('chat-history');
         this.textInput = document.getElementById('text-input');
         this.sendBtn = document.getElementById('send-btn');
@@ -43,9 +45,21 @@ export class ChatInterface
             faster: document.getElementById('speed-faster-btn')
         };
 
+        console.log('🎯 ChatInterface DOM elements found:');
+        console.log('  - chatHistory:', this.chatHistory ? '✅' : '❌');
+        console.log('  - textInput:', this.textInput ? '✅' : '❌');
+        console.log('  - sendBtn:', this.sendBtn ? '✅' : '❌');
+        console.log('  - ttsAudio:', this.ttsAudio ? '✅' : '❌');
+
         if (!this.chatHistory || !this.textInput || !this.sendBtn)
         {
             console.error('ChatInterface: Required DOM elements not found');
+            console.log('🎯 Available elements with these IDs:');
+            ['chat-history', 'text-input', 'send-btn', 'tts-audio'].forEach(id =>
+            {
+                const el = document.getElementById(id);
+                console.log(`  - ${id}:`, el ? `Found (${el.style.display}, ${el.style.visibility})` : 'Not found');
+            });
             this.alertManager?.showWarning('Chat interface not available');
         }
 

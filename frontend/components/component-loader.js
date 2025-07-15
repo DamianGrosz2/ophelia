@@ -106,8 +106,8 @@ class ComponentLoader
         // Immediately remap component IDs for surgical grid compatibility
         this.remapComponentIds();
 
-        // Hide the content components initially (they'll be cloned into grid cells)
-        this.hideContentComponents();
+        // Don't hide components immediately - wait for chat interface to initialize
+        console.log('Components loaded, waiting for initialization before hiding...');
 
         const success = structuralSuccess && contentSuccess;
 
@@ -116,6 +116,9 @@ class ComponentLoader
             console.log('All components loaded successfully');
             // Dispatch a custom event to signal that components are ready
             document.dispatchEvent(new CustomEvent('componentsLoaded'));
+
+            // Hide components after a delay to allow initialization
+            this.delayedHideComponents();
         } else
         {
             console.error('Some components failed to load');
@@ -158,7 +161,7 @@ class ComponentLoader
     {
         const componentIds = [
             'patient-panel',
-            'voice-interface',
+            'voice-interface', // Include this back in the list to hide
             'monitoring-panel',
             'vtk-viewer',
             'dicom-viewer'
@@ -182,6 +185,17 @@ class ComponentLoader
                 console.warn(`Component ${componentId} not found for hiding`);
             }
         });
+    }
+
+    /**
+     * Delay hiding components to allow initialization
+     */
+    async delayedHideComponents()
+    {
+        // Wait for chat interface and other components to initialize
+        await new Promise(resolve => setTimeout(resolve, 500));
+        console.log('Now hiding content components after initialization delay...');
+        this.hideContentComponents();
     }
 
     /**
