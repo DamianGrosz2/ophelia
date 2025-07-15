@@ -216,4 +216,4 @@ class ComponentLoader
 }
 
 // Export for use in other modules
-window.ComponentLoader = ComponentLoader; 
+export default ComponentLoader; 

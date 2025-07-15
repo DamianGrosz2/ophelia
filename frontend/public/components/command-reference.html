@@ -1,0 +1,139 @@
+<!-- Command Reference Popup Component -->
+<div class="command-popup-overlay" id="command-popup-overlay">
+    <div class="command-popup">
+        <div class="command-popup-header">
+            <h2>🎤 Voice Commands Reference</h2>
+            <button class="close-btn" id="close-commands-popup" title="Close commands reference">×</button>
+        </div>
+
+        <div class="command-popup-content">
+            <!-- 3D Model Interaction -->
+            <div class="command-category">
+                <h3 class="category-title">🔬 3D Model Interaction</h3>
+                <div class="command-grid">
+                    <div class="command-item">
+                        <div class="command-text">"Open VTK file" / "Load CPO model"</div>
+                        <div class="command-desc">Loads 3D visualization</div>
+                    </div>
+                    <div class="command-item">
+                        <div class="command-text">"Zoom 3D model" / "Zoom 3D model 2x"</div>
+                        <div class="command-desc">Magnifies the 3D view</div>
+                    </div>
+                    <div class="command-item">
+                        <div class="command-text">"Zoom out"</div>
+                        <div class="command-desc">Reduces magnification</div>
+                    </div>
+                    <div class="command-item">
+                        <div class="command-text">"Reset 3D view"</div>
+                        <div class="command-desc">Returns to default camera position</div>
+                    </div>
+                    <div class="command-item">
+                        <div class="command-text">"Rotate view left/right"</div>
+                        <div class="command-desc">Adjusts 3D orientation</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DICOM Medical Imaging -->
+            <div class="command-category">
+                <h3 class="category-title">🏥 DICOM Medical Imaging</h3>
+                <div class="command-grid">
+                    <div class="command-item">
+                        <div class="command-text">"Show DICOM images" / "Load medical scan"</div>
+                        <div class="command-desc">Displays medical images</div>
+                    </div>
+                    <div class="command-item">
+                        <div class="command-text">"Next image" / "Previous image"</div>
+                        <div class="command-desc">Navigate through image series</div>
+                    </div>
+                    <div class="command-item">
+                        <div class="command-text">"Load series [ID]"</div>
+                        <div class="command-desc">Loads specific DICOM series</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Surgical Grid Control -->
+            <div class="command-category">
+                <h3 class="category-title">🔳 Surgical Grid Control</h3>
+                <div class="command-grid">
+                    <div class="command-item">
+                        <div class="command-text">"Open vitals in A-Top"</div>
+                        <div class="command-desc">Places program into specific grid cell</div>
+                    </div>
+                    <div class="command-item">
+                        <div class="command-text">"Move Patient Information to D-Bottom"</div>
+                        <div class="command-desc">Repositions existing program</div>
+                    </div>
+                    <div class="command-item">
+                        <div class="command-text">"Close vitals" / "Close B-Bottom"</div>
+                        <div class="command-desc">Removes program from grid</div>
+                    </div>
+                    <div class="command-item">
+                        <div class="command-text">"Clear screen"</div>
+                        <div class="command-desc">Closes all windows</div>
+                    </div>
+                    <div class="command-item">
+                        <div class="command-text">"Save layout as Lap Chole"</div>
+                        <div class="command-desc">Saves current grid configuration</div>
+                    </div>
+                    <div class="command-item">
+                        <div class="command-text">"Load layout Dr. Smith's Default"</div>
+                        <div class="command-desc">Loads saved grid layout</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Medical Data Queries -->
+            <div class="command-category">
+                <h3 class="category-title">📊 Medical Data Queries</h3>
+                <div class="command-grid">
+                    <div class="command-item">
+                        <div class="command-text">"What is the patient's creatinine level?"</div>
+                        <div class="command-desc">Retrieves specific lab values</div>
+                    </div>
+                    <div class="command-item">
+                        <div class="command-text">"Show me the contrast usage"</div>
+                        <div class="command-desc">Displays contrast monitoring data</div>
+                    </div>
+                    <div class="command-item">
+                        <div class="command-text">"What are the patient allergies?"</div>
+                        <div class="command-desc">Lists known allergies and contraindications</div>
+                    </div>
+                    <div class="command-item">
+                        <div class="command-text">"What is the current INR value?"</div>
+                        <div class="command-desc">Shows anticoagulation status</div>
+                    </div>
+                    <div class="command-item">
+                        <div class="command-text">"Tell me about the patient's medical history"</div>
+                        <div class="command-desc">Provides comprehensive patient background</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Control -->
+            <div class="command-category">
+                <h3 class="category-title">⚙️ System Control</h3>
+                <div class="command-grid">
+                    <div class="command-item">
+                        <div class="command-text">"Ophelia" (wake word)</div>
+                        <div class="command-desc">Activates voice recognition</div>
+                    </div>
+                    <div class="command-item">
+                        <div class="command-text">Text input</div>
+                        <div class="command-desc">Type commands directly into interface</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="command-popup-footer">
+            <div class="footer-note">
+                💡 <strong>Tip:</strong> All commands work with natural language variations.
+                The system uses a predictable 2x4 Surgical Grid (A-D columns, Top-Bottom rows) for precise window
+                control.
+                Every command provides visual feedback before execution to ensure accuracy in sterile OR environments.
+            </div>
+        </div>
+    </div>
+</div>

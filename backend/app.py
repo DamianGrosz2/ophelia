@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any
 from pathlib import Path
 
-from fastapi import FastAPI, File, UploadFile, HTTPException, Depends
+from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -173,8 +173,6 @@ def initialize_llm():
         # Debug: Check if .env file exists and what we're loading
         print(f"Loading .env from: {env_path}")
         print(f"File exists: {os.path.exists(env_path)}")
-        print(f"Raw API key value: {repr(api_key)}")
-        print(f"API key starts with: {api_key[:10] + '...' if api_key and len(api_key) > 10 else api_key}")
         
         if api_key and api_key.strip() and api_key != "your_gemini_api_key_here":
             genai.configure(api_key=api_key)
@@ -1089,51 +1087,66 @@ async def start_transcription(procedure_type: str = "pad_angioplasty"):
 
 @app.post("/transcription/segment")
 async def add_transcription_segment(
-    session_id: str, 
     audio: UploadFile = File(...),
-    timestamp: Optional[str] = None
+    session_id: str = Form(...),
+    timestamp: Optional[str] = Form(None)
 ):
     """Add a transcription segment to an active session"""
     try:
+        logger.info(f"🎤 Received segment for session {session_id}, audio: {audio.filename}, timestamp: {timestamp}")
+        
         # Load existing transcription data
         transcription_data_dict = load_transcription_session(session_id)
         if not transcription_data_dict:
+            logger.error(f"❌ Session {session_id} not found")
             raise HTTPException(status_code=404, detail="Transcription session not found")
         
         # Transcribe the audio segment
         if not whisper_model:
+            logger.error("❌ Whisper model not available")
             raise HTTPException(status_code=503, detail="Transcription service unavailable")
         
         # Read the uploaded audio file
         audio_bytes = await audio.read()
+        logger.info(f"🎤 Audio bytes received: {len(audio_bytes)} bytes")
         
         # Use OpenAI Whisper API if available
         transcript_text = ""
         if whisper_model == "openai_api" and openai_client:
+            logger.info("🎤 Using OpenAI Whisper API for transcription")
             try:
                 import tempfile
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
                     temp_file.write(audio_bytes)
                     temp_file_path = temp_file.name
                 
+                logger.info(f"🎤 Created temp file: {temp_file_path}")
+                
                 try:
                     with open(temp_file_path, "rb") as audio_file:
+                        logger.info("🎤 Calling OpenAI Whisper API...")
                         transcript = openai_client.audio.transcriptions.create(
                             model="whisper-1",
                             file=audio_file
                         )
                     transcript_text = transcript.text.strip()
+                    logger.info(f"🎤 Transcription result: '{transcript_text}'")
                 finally:
                     import os
                     if os.path.exists(temp_file_path):
                         os.unlink(temp_file_path)
             except Exception as e:
-                logger.error(f"OpenAI Whisper API error: {e}")
+                logger.error(f"❌ OpenAI Whisper API error: {e}")
                 transcript_text = "Audio segment transcribed"
+        else:
+            logger.warning("⚠️ OpenAI Whisper API not available, using fallback")
+            transcript_text = "Audio segment transcribed"
         
         # Create segment with timestamp
         if not timestamp:
             timestamp = datetime.now().strftime("%H:%M:%S")
+        
+        logger.info(f"🎤 Creating segment with timestamp {timestamp}")
         
         segment = TranscriptionSegment(
             timestamp=timestamp,
@@ -1146,11 +1159,14 @@ async def add_transcription_segment(
         # Update full transcript
         transcription_data_dict['full_transcript'] += f" {transcript_text}".strip()
         
+        logger.info(f"🎤 Updated transcript (total segments: {len(transcription_data_dict['transcript_segments'])})")
+        logger.info(f"🎤 Full transcript: '{transcription_data_dict['full_transcript']}'")
+        
         # Save updated transcription data
         transcription_data = TranscriptionData(**transcription_data_dict)
         save_transcription_session(transcription_data)
         
-        logger.info(f"Added segment to session {session_id}: {transcript_text}")
+        logger.info(f"✅ Added segment to session {session_id}: '{transcript_text}'")
         
         return {
             "session_id": session_id,

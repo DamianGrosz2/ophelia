@@ -1,0 +1,50 @@
+<!-- Voice Command Center Component -->
+<div class="panel" id="panel-2">
+    <div class="panel-header">
+        <span>Voice Command Center</span>
+    </div>
+    <div class="panel-content">
+        <div class="voice-interface">
+            <!-- Scrollable Content Area -->
+            <div class="voice-content-area">
+                <!-- Chat History -->
+                <div class="chat-history" id="chat-history">
+                    <div class="chat-message assistant">
+                        <div class="message-content">
+                            <div class="message-text">Voice assistant ready. Ask about patient data, procedures, or use
+                                display commands.</div>
+                            <div class="message-time">System</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transcription Controls -->
+                <div class="transcription-controls">
+                    <div class="transcription-header">
+                        <span class="transcription-label">Transcription</span>
+                    </div>
+                    <div class="transcription-buttons">
+                        <button id="start-transcription-btn" class="transcription-btn start-btn">Start</button>
+                        <button id="stop-transcription-btn" class="transcription-btn stop-btn" disabled>Stop</button>
+                        <div id="transcription-status" class="transcription-status idle">Not Recording</div>
+                        <button id="create-letter-btn" class="letter-btn">Create Letter</button>
+                    </div>
+                </div>
+
+                <!-- Letter Display -->
+                <div id="letter-display" class="letter-display" style="display: none;">
+                    <!-- Letter content will be dynamically inserted here -->
+                </div>
+            </div>
+
+            <!-- Fixed Input Controls at Bottom -->
+            <div class="input-controls-fixed">
+                <div class="text-input-container">
+                    <input type="text" class="text-input" id="text-input"
+                        placeholder="Type your message or say 'Ophelia' for voice commands...">
+                    <button class="send-button" id="send-btn">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

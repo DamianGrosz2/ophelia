@@ -20,11 +20,11 @@
     <!-- Audio element for TTS -->
     <audio id="tts-audio" style="display: none;"></audio>
 
-    <!-- Load component loader first -->
-    <script src="/components/component-loader.js"></script>
-
     <!-- Main application script -->
     <script type="module">
+        // Import ComponentLoader as an ES module
+        import ComponentLoader from './components/component-loader.js';
+
         // Initialize the application
         document.addEventListener('DOMContentLoaded', async () =>
         {
