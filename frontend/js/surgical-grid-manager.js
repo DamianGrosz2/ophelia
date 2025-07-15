@@ -5,6 +5,9 @@
  * visual feedback, and layout presets for OR environments.
  */
 
+import { VtkViewer } from '../vtk-viewer.js';
+import { DicomViewer } from '../dicom-viewer.js';
+
 export class SurgicalGridManager
 {
     constructor(alertManager)
@@ -139,6 +142,7 @@ export class SurgicalGridManager
         const reorderOverlay = document.getElementById('reorder-overlay');
         const reorderCloseBtn = document.getElementById('reorder-close-btn');
         const reorderConfirmBtn = document.getElementById('reorder-confirm-btn');
+        const reorderExpandBtn = document.getElementById('reorder-expand-btn');
         const reorderCancelBtn = document.getElementById('reorder-cancel-btn');
 
         if (reorderCloseBtn)
@@ -149,6 +153,11 @@ export class SurgicalGridManager
         if (reorderConfirmBtn)
         {
             reorderConfirmBtn.addEventListener('click', () => this.confirmReorder());
+        }
+
+        if (reorderExpandBtn)
+        {
+            reorderExpandBtn.addEventListener('click', () => this.confirmExpand());
         }
 
         if (reorderCancelBtn)
@@ -243,6 +252,12 @@ export class SurgicalGridManager
             if (cmd.includes('move') && cmd.includes(' to '))
             {
                 return this.handleMoveCommand(cmd);
+            }
+
+            // EXPAND commands
+            if (cmd.includes('expand') && cmd.includes(' to '))
+            {
+                return this.handleExpandCommand(cmd);
             }
 
             // SWAP commands
@@ -382,6 +397,78 @@ export class SurgicalGridManager
         {
             this.moveProgram(sourcePositions, targetPositions);
             this.showFeedback(`Moved ${program} to ${targetPositions.join(', ')}`, 'success');
+        }, 1000);
+
+        return true;
+    }
+
+    /**
+     * Handle EXPAND commands
+     */
+    handleExpandCommand(cmd)
+    {
+        // Extract source and target
+        const expandMatch = cmd.match(/expand\s+(.+?)\s+to\s+(.+)/);
+        if (!expandMatch) return false;
+
+        const sourceText = expandMatch[1].trim();
+        const targetText = expandMatch[2].trim();
+
+        // Find source positions
+        let sourcePositions;
+        if (this.isPosition(sourceText))
+        {
+            sourcePositions = this.parseLocations(sourceText);
+        } else
+        {
+            // Find by program name
+            sourcePositions = this.findProgramPositions(sourceText);
+        }
+
+        if (sourcePositions.length === 0)
+        {
+            this.showFeedback(`Source "${sourceText}" not found`, 'error');
+            return false;
+        }
+
+        const targetPositions = this.parseLocations(targetText);
+        if (targetPositions.length !== 1)
+        {
+            this.showFeedback('Can only expand to one cell at a time', 'error');
+            return false;
+        }
+
+        const sourcePosition = sourcePositions[0]; // Use first source position as reference
+        const targetPosition = targetPositions[0];
+
+        // Check if it's a direct neighbor
+        if (!this.isDirectNeighbor(sourcePosition, targetPosition))
+        {
+            this.showFeedback(`${targetPosition} is not adjacent to ${sourcePosition}`, 'error');
+            return false;
+        }
+
+        // Check if target is available
+        if (this.cellContents.get(targetPosition))
+        {
+            this.showFeedback(`Target cell ${targetPosition} is not empty`, 'error');
+            return false;
+        }
+
+        // Get the program being expanded
+        const program = this.cellContents.get(sourcePosition);
+        if (!program)
+        {
+            this.showFeedback(`No program found at ${sourcePosition}`, 'error');
+            return false;
+        }
+
+        // Highlight then execute
+        this.highlightCells([...sourcePositions, targetPosition], 'info');
+        setTimeout(() =>
+        {
+            this.expandProgram(sourcePosition, targetPosition);
+            this.showFeedback(`Expanded ${program} to include ${targetPosition}`, 'success');
         }, 1000);
 
         return true;
@@ -1068,10 +1155,42 @@ export class SurgicalGridManager
         switch (program)
         {
             case 'vtk-viewer':
-                // Initialize VTK viewer if needed
+                // Initialize VTK viewer and load CPO_ist.vtk by default
+                setTimeout(() =>
+                {
+                    const vtkContainer = document.querySelector(`#content-${position} .vtk-viewer`);
+                    if (vtkContainer)
+                    {
+                        // Initialize VTK viewer in this cell
+                        const vtkViewer = new VtkViewer(
+                            vtkContainer,
+                            (message, level) => this.alertManager?.showAlert(message, level)
+                        );
+                        // The VTK viewer will automatically load CPO_ist.vtk due to our earlier changes
+                    } else
+                    {
+                        console.error('Could not find .vtk-viewer for VTK viewer in position:', position);
+                    }
+                }, 500);
                 break;
             case 'dicom-viewer':
                 // Initialize DICOM viewer if needed
+                setTimeout(() =>
+                {
+                    // Find the panel content container which contains the .dicom-viewer element
+                    const panelContent = document.querySelector(`#content-${position} .panel-content`);
+                    if (panelContent)
+                    {
+                        // Initialize DICOM viewer in this cell, passing the panel-content container
+                        const dicomViewer = new DicomViewer(
+                            panelContent,
+                            (message, level) => this.alertManager?.showAlert(message, level)
+                        );
+                    } else
+                    {
+                        console.error('Could not find .panel-content for DICOM viewer in position:', position);
+                    }
+                }, 500);
                 break;
             case 'monitoring-panel':
                 // Initialize charts if needed
@@ -1411,13 +1530,14 @@ export class SurgicalGridManager
     updateReorderOverlay(sourcePosition)
     {
         const reorderCells = document.querySelectorAll('.reorder-cell');
+        const directNeighbors = this.getDirectNeighbors(sourcePosition);
 
         reorderCells.forEach(cell =>
         {
             const position = cell.dataset.target;
 
             // Clear previous states
-            cell.classList.remove('occupied', 'source', 'selected');
+            cell.classList.remove('occupied', 'source', 'selected', 'expandable');
 
             // Mark source cell
             if (position === sourcePosition)
@@ -1433,6 +1553,11 @@ export class SurgicalGridManager
             else if (this.selectedReorderCells.has(position))
             {
                 cell.classList.add('selected');
+            }
+            // Mark expandable neighbors (empty direct neighbors)
+            else if (directNeighbors.includes(position) && !this.cellContents.get(position))
+            {
+                cell.classList.add('expandable');
             }
         });
     }
@@ -1495,6 +1620,8 @@ export class SurgicalGridManager
     updateConfirmButton()
     {
         const confirmBtn = document.getElementById('reorder-confirm-btn');
+        const expandBtn = document.getElementById('reorder-expand-btn');
+
         if (confirmBtn)
         {
             const hasSelection = this.selectedReorderCells.size > 0;
@@ -1508,6 +1635,25 @@ export class SurgicalGridManager
             else
             {
                 confirmBtn.textContent = 'Move Here';
+            }
+        }
+
+        if (expandBtn)
+        {
+            // Only enable expand button if exactly one cell is selected and it's a direct neighbor
+            const hasSelection = this.selectedReorderCells.size === 1;
+            const selectedPosition = Array.from(this.selectedReorderCells)[0];
+            const isNeighbor = hasSelection && this.isDirectNeighbor(this.currentReorderSource, selectedPosition);
+
+            expandBtn.disabled = !isNeighbor;
+
+            if (isNeighbor)
+            {
+                expandBtn.textContent = 'Expand to Here';
+            }
+            else
+            {
+                expandBtn.textContent = 'Expand to Here';
             }
         }
     }
@@ -1545,6 +1691,151 @@ export class SurgicalGridManager
         this.hideReorderOverlay();
     }
 
+    /**
+     * Confirm and execute the expand operation
+     */
+    confirmExpand()
+    {
+        if (!this.currentReorderSource || this.selectedReorderCells.size !== 1)
+        {
+            return;
+        }
+
+        const sourcePosition = this.currentReorderSource;
+        const targetPosition = Array.from(this.selectedReorderCells)[0];
+
+        // Verify it's a direct neighbor
+        if (!this.isDirectNeighbor(sourcePosition, targetPosition))
+        {
+            this.showFeedback('Can only expand to direct neighbors', 'error');
+            return;
+        }
+
+        try
+        {
+            this.expandProgram(sourcePosition, targetPosition);
+            this.showFeedback(
+                `Expanded content from ${sourcePosition} to include ${targetPosition}`,
+                'success'
+            );
+        }
+        catch (error)
+        {
+            console.error('Error executing expand:', error);
+            this.showFeedback('Error expanding content', 'error');
+        }
+
+        this.hideReorderOverlay();
+    }
+
+    /**
+     * Expand a program from its current positions to include a new position
+     */
+    expandProgram(sourcePosition, targetPosition)
+    {
+        const component = this.cellContents.get(sourcePosition);
+        if (!component)
+        {
+            throw new Error('No component found at source position');
+        }
+
+        // Check if target position is available
+        if (this.cellContents.get(targetPosition))
+        {
+            throw new Error('Target position is not empty');
+        }
+
+        // Get all current positions of this component
+        const currentPositions = this.getSourceComponentPositions(sourcePosition);
+
+        // Add the new position to the spanning
+        const newPositions = [...currentPositions, targetPosition];
+
+        // Clear the current spanning first
+        this.clearSpanningComponent(component, currentPositions);
+
+        // Create new spanning with expanded positions
+        this.createSpanningComponent(component, newPositions);
+    }
+
+    /**
+     * Clear a spanning component from all its positions
+     */
+    clearSpanningComponent(component, positions)
+    {
+        positions.forEach(pos =>
+        {
+            this.cellContents.set(pos, null);
+            this.cellStates.set(pos, 'empty');
+            this.clearCellContent(pos);
+            this.updateCellAppearance(pos);
+        });
+    }
+
+    /**
+     * Get direct neighbors of a grid position
+     */
+    getDirectNeighbors(position)
+    {
+        const neighbors = [];
+        const [col, row] = position.split('-');
+
+        // Define column and row mappings
+        const colMap = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
+        const rowMap = { 'Top': 0, 'Bottom': 1 };
+        const colNames = ['A', 'B', 'C', 'D'];
+        const rowNames = ['Top', 'Bottom'];
+
+        const currentCol = colMap[col];
+        const currentRow = rowMap[row];
+
+        // Check all 4 directions (up, down, left, right)
+        const directions = [
+            { col: currentCol, row: currentRow - 1 }, // up
+            { col: currentCol, row: currentRow + 1 }, // down
+            { col: currentCol - 1, row: currentRow }, // left
+            { col: currentCol + 1, row: currentRow }  // right
+        ];
+
+        directions.forEach(dir =>
+        {
+            if (dir.col >= 0 && dir.col < 4 && dir.row >= 0 && dir.row < 2)
+            {
+                const neighborPos = `${colNames[dir.col]}-${rowNames[dir.row]}`;
+                neighbors.push(neighborPos);
+            }
+        });
+
+        return neighbors;
+    }
+
+    /**
+     * Check if a position is a direct neighbor of the source position
+     */
+    isDirectNeighbor(sourcePosition, targetPosition)
+    {
+        const neighbors = this.getDirectNeighbors(sourcePosition);
+        return neighbors.includes(targetPosition);
+    }
+
+    /**
+     * Get all positions currently occupied by the same component as the source
+     */
+    getSourceComponentPositions(sourcePosition)
+    {
+        const component = this.cellContents.get(sourcePosition);
+        if (!component) return [sourcePosition];
+
+        const positions = [];
+        for (const [position, content] of this.cellContents.entries())
+        {
+            if (content === component)
+            {
+                positions.push(position);
+            }
+        }
+        return positions;
+    }
 
 
     /**

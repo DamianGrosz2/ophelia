@@ -326,6 +326,9 @@ class ORVoiceAssistant
             // Initialize external viewers after grid is set up
             setTimeout(() => this.initializeViewers(), 500);
 
+            // Initialize the voice recorder UI
+            this.voiceRecorder.initialize();
+
             this.alertManager.showSuccess('Voice Assistant ready');
 
         } catch (error)

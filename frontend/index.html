@@ -40,12 +40,13 @@
         // Listen for components loaded event
         document.addEventListener('componentsLoaded', () =>
         {
-            console.log('All components loaded, initializing main application...');
+            console.log('All components loaded, importing main application...');
 
-            // Import and initialize the refactored main application
+            // Import the refactored main application (it will initialize itself)
             import('./js/main-refactored.js').then(module =>
             {
                 console.log('Refactored main application script loaded');
+                // The main-refactored.js file handles its own initialization
             }).catch(error =>
             {
                 console.error('Failed to load main application:', error);
