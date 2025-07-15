@@ -52,7 +52,6 @@ export class VoiceRecorder
         console.log('VoiceRecorder initialize() called');
         this.createListeningControls();
         this.setupEventListeners();
-        console.log('VoiceRecorder initialization complete');
     }
 
     /**
@@ -60,7 +59,6 @@ export class VoiceRecorder
  */
     setupEventListeners()
     {
-        console.log('setupEventListeners() called');
 
         // Keyboard shortcut (Ctrl+Space) - keep for manual recording if needed
         document.addEventListener('keydown', (e) =>
@@ -83,7 +81,6 @@ export class VoiceRecorder
         // Only set up once to prevent duplicates
         if (!this.delegationSetup)
         {
-            console.log('🔄 Setting up event delegation for listening toggle');
             this.delegationSetup = true;
 
             document.addEventListener('change', (e) =>
@@ -416,11 +413,8 @@ export class VoiceRecorder
      */
     createListeningControls()
     {
-        console.log('Creating listening controls...');
-
         // Find the voice interface container
         const voiceInterface = document.querySelector('.voice-interface');
-        console.log('Voice interface found:', voiceInterface);
         if (!voiceInterface)
         {
             console.error('Voice interface container not found!');
@@ -430,16 +424,10 @@ export class VoiceRecorder
         // Check if controls already exist
         if (document.getElementById('listening-controls'))
         {
-            console.log('Listening controls already exist, updating element references...');
             // Update element references even if controls already exist
             this.listeningToggle = document.getElementById('listening-toggle');
             this.stopListeningBtn = document.getElementById('stop-listening-btn');
             this.listeningStatus = document.getElementById('listening-status');
-
-            console.log('Element references updated for existing controls:');
-            console.log('  listeningToggle:', this.listeningToggle);
-            console.log('  stopListeningBtn:', this.stopListeningBtn);
-            console.log('  listeningStatus:', this.listeningStatus);
             return;
         }
 
@@ -478,11 +466,6 @@ export class VoiceRecorder
         this.listeningToggle = document.getElementById('listening-toggle');
         this.stopListeningBtn = document.getElementById('stop-listening-btn');
         this.listeningStatus = document.getElementById('listening-status');
-
-        console.log('Element references updated:');
-        console.log('  listeningToggle:', this.listeningToggle);
-        console.log('  stopListeningBtn:', this.stopListeningBtn);
-        console.log('  listeningStatus:', this.listeningStatus);
     }
 
     /**

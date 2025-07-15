@@ -119,6 +119,44 @@ body {
     font-size: 1rem;
 }
 
+.speed-controls {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.speed-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.4rem 0.8rem;
+    background: rgba(168, 85, 247, 0.1);
+    border: 1px solid rgba(168, 85, 247, 0.3);
+    border-radius: 0.4rem;
+    color: #a855f7;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.8rem;
+    font-weight: 500;
+    min-width: 60px;
+    justify-content: center;
+}
+
+.speed-btn:hover {
+    background: rgba(168, 85, 247, 0.2);
+    border-color: rgba(168, 85, 247, 0.5);
+    transform: translateY(-1px);
+}
+
+.speed-btn.active {
+    background: #a855f7;
+    color: #0f1419;
+    border-color: #a855f7;
+}
+
+.speed-icon {
+    font-size: 0.9rem;
+}
+
 /* ===== LAYOUT STYLES ===== */
 .main-container {
     width: 100%;

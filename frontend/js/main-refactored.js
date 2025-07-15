@@ -87,19 +87,33 @@ class ORVoiceAssistant
     {
         console.log('Initializing ORVoiceAssistant with modular architecture...');
 
-        // Initialize Cornerstone first
-        this.initializeCornerstone();
+        // Start async initialization
+        this.initialize();
+    }
 
-        // Initialize core components
-        this.initializeComponents();
+    async initialize()
+    {
+        try
+        {
+            // Initialize Cornerstone first
+            this.initializeCornerstone();
 
-        // Wire up component interactions
-        this.setupComponentInteractions();
+            // Initialize core components (now async)
+            await this.initializeComponents();
 
-        // Start the application
-        this.startApplication();
+            // Wire up component interactions
+            this.setupComponentInteractions();
 
-        console.log('ORVoiceAssistant initialized successfully');
+            // Start the application
+            await this.startApplication();
+
+            console.log('ORVoiceAssistant initialized successfully');
+        }
+        catch (error)
+        {
+            console.error('Failed to initialize ORVoiceAssistant:', error);
+            throw error;
+        }
     }
 
     /**
@@ -126,7 +140,7 @@ class ORVoiceAssistant
     /**
      * Initialize all modular components
      */
-    initializeComponents()
+    async initializeComponents()
     {
         // Create shared services first
         this.apiClient = new ApiClient();
@@ -134,6 +148,9 @@ class ORVoiceAssistant
 
         // Create the surgical grid manager first
         this.surgicalGrid = new SurgicalGridManager(this.alertManager);
+
+        // Wait a short moment to ensure DOM elements are available
+        await new Promise(resolve => setTimeout(resolve, 10));
 
         // Create UI components
         this.voiceRecorder = new VoiceRecorder(this.apiClient, this.alertManager);
@@ -166,10 +183,18 @@ class ORVoiceAssistant
             this.processCommand(message);
         });
 
-        // Procedure changes -> Update displays
+        // Procedure changes -> Update displays AND layout
         this.procedureManager.onProcedureChange((procedureType, data) =>
         {
+            console.log(`Procedure changed to: ${procedureType}`);
+
+            // Update voice recorder
             this.voiceRecorder.setCurrentProcedure(procedureType);
+
+            // Update surgical grid layout for new procedure
+            this.surgicalGrid.setProcedureType(procedureType);
+
+            // Update data displays
             if (data)
             {
                 this.patientDisplay.updateDisplay(data);
@@ -317,11 +342,13 @@ class ORVoiceAssistant
             // Load initial procedure data
             await this.procedureManager.loadProcedureData();
 
+            // Initialize surgical grid with current procedure type
+            const currentProcedure = this.procedureManager.getCurrentProcedure();
+            console.log(`Initializing surgical grid with procedure: ${currentProcedure}`);
+            this.surgicalGrid.setProcedureType(currentProcedure);
+
             // Start real-time vitals monitoring
             this.vitalsChart.startRealTimeUpdates();
-
-            // Update grid layout
-            this.updateGridLayout();
 
             // Initialize external viewers after grid is set up
             setTimeout(() => this.initializeViewers(), 500);
@@ -537,19 +564,18 @@ class ORVoiceAssistant
      */
     handleCloseDisplayCommand(target)
     {
-        const panelMap = {
-            'patient': 'panel-1',
-            'voice': 'panel-2',
-            'monitoring': 'panel-3',
-            '3d': 'panel-4',
-            'dicom': 'panel-5'
-        };
-
-        const panelId = panelMap[target];
-        if (panelId && window.closePanel)
+        // Use surgical grid manager to close programs
+        if (this.surgicalGrid)
         {
-            window.closePanel(panelId);
-            this.alertManager.showInfo(`Closed ${target} panel`);
+            const success = this.surgicalGrid.handleCloseCommand(`close ${target}`);
+            if (!success)
+            {
+                this.alertManager.showWarning(`Could not close ${target}`);
+            }
+        }
+        else
+        {
+            this.alertManager.showError('Surgical grid manager not available');
         }
     }
 

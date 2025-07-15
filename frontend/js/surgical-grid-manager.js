@@ -44,11 +44,48 @@ export class SurgicalGridManager
         // Saved layouts
         this.savedLayouts = this.loadSavedLayouts();
 
+        // Current procedure type
+        this.currentProcedure = 'pad_angioplasty';
+
         this.initializeGrid();
         this.setupEventListeners();
         this.updateReopenButtonState();
+    }
 
+    /**
+     * Set the current procedure type and load appropriate layout
+     */
+    setProcedureType(procedureType)
+    {
+        console.log(`Setting procedure type to: ${procedureType}`);
+        this.currentProcedure = procedureType;
+        this.loadProcedureLayout(procedureType);
+    }
 
+    /**
+     * Load procedure-specific layout
+     */
+    loadProcedureLayout(procedureType)
+    {
+        console.log(`Loading layout for procedure: ${procedureType}`);
+
+        // Clear current layout first
+        this.clearScreen();
+
+        // Load procedure-specific layout
+        switch (procedureType)
+        {
+            case 'pad_angioplasty':
+                this.createPadAngioplastyLayout();
+                break;
+            case 'ep_ablation':
+                this.createEpAblationLayout();
+                break;
+            default:
+                console.warn(`Unknown procedure type: ${procedureType}, using default layout`);
+                this.createDefaultLayout();
+                break;
+        }
     }
 
     /**
@@ -65,28 +102,11 @@ export class SurgicalGridManager
         });
 
         // Force clear all layouts first to ensure clean start with spanning components
-
         localStorage.removeItem('surgicalGridLayouts');
         this.savedLayouts = [];
 
-        // Always create fresh demo layout with proper spanning
-
-
-
-        // Wait for components to be fully loaded before creating demo layout
-        if (document.readyState === 'loading')
-        {
-
-            document.addEventListener('DOMContentLoaded', () =>
-            {
-
-                setTimeout(() => this.createDemoLayout(), 100);
-            });
-        } else
-        {
-
-            setTimeout(() => this.createDemoLayout(), 100);
-        }
+        // Don't automatically create layout here - wait for procedure type to be set
+        console.log('Grid initialized, waiting for procedure type to be set');
     }
 
     /**
@@ -310,50 +330,60 @@ export class SurgicalGridManager
     processGridCommand(command)
     {
         const cmd = command.toLowerCase().trim();
+        console.log(`🎯 processGridCommand called with: "${command}"`);
+        console.log(`🎯 Normalized command: "${cmd}"`);
 
         try
         {
             // OPEN commands
             if (cmd.includes('open') && (cmd.includes(' in ') || cmd.includes(' on ') || cmd.includes(' across ')))
             {
+                console.log(`🎯 Detected OPEN command`);
                 return this.handleOpenCommand(cmd);
             }
 
             // MOVE commands  
             if (cmd.includes('move') && cmd.includes(' to '))
             {
+                console.log(`🎯 Detected MOVE command`);
                 return this.handleMoveCommand(cmd);
             }
 
             // EXPAND commands
             if (cmd.includes('expand') && cmd.includes(' to '))
             {
+                console.log(`🎯 Detected EXPAND command`);
                 return this.handleExpandCommand(cmd);
             }
 
             // SWAP commands
             if (cmd.includes('swap') && cmd.includes(' with '))
             {
+                console.log(`🎯 Detected SWAP command`);
                 return this.handleSwapCommand(cmd);
             }
 
             // CLOSE commands
             if (cmd.includes('close') || cmd.includes('clear'))
             {
+                console.log(`🎯 Detected CLOSE command`);
                 return this.handleCloseCommand(cmd);
             }
 
             // LAYOUT commands
             if (cmd.includes('save layout'))
             {
+                console.log(`🎯 Detected SAVE LAYOUT command`);
                 return this.handleSaveLayoutCommand(cmd);
             }
 
             if (cmd.includes('load layout'))
             {
+                console.log(`🎯 Detected LOAD LAYOUT command`);
                 return this.handleLoadLayoutCommand(cmd);
             }
 
+            console.log(`🎯 No grid command pattern matched for: "${cmd}"`);
             return false;
         } catch (error)
         {
@@ -368,34 +398,52 @@ export class SurgicalGridManager
      */
     handleOpenCommand(cmd)
     {
+        console.log(`🎯 handleOpenCommand processing: "${cmd}"`);
+
         // Extract program and location(s)
         const openMatch = cmd.match(/open\s+(.+?)\s+(?:in|on|across)\s+(.+)/);
-        if (!openMatch) return false;
+        if (!openMatch)
+        {
+            console.log(`🎯 Failed to match OPEN command pattern`);
+            return false;
+        }
 
         const programName = openMatch[1].trim();
         const locationText = openMatch[2].trim();
 
+        console.log(`🎯 Extracted program: "${programName}"`);
+        console.log(`🎯 Extracted location: "${locationText}"`);
+
         const program = this.findProgram(programName);
         if (!program)
         {
+            console.log(`🎯 Program not found for: "${programName}"`);
             this.showFeedback(`Program "${programName}" not found`, 'error');
             return false;
         }
 
+        console.log(`🎯 Found program: "${program}"`);
+
         const positions = this.parseLocations(locationText);
         if (positions.length === 0)
         {
+            console.log(`🎯 No positions found for: "${locationText}"`);
             this.showFeedback(`Location "${locationText}" not recognized`, 'error');
             return false;
         }
+
+        console.log(`🎯 Found positions: [${positions.join(', ')}]`);
 
         // Check if positions are available
         const unavailable = positions.filter(pos => this.cellStates.get(pos) !== 'empty');
         if (unavailable.length > 0)
         {
+            console.log(`🎯 Unavailable cells: [${unavailable.join(', ')}]`);
             this.showFeedback(`Cells ${unavailable.join(', ')} are not empty`, 'error');
             return false;
         }
+
+        console.log(`🎯 All cells available, proceeding to open program`);
 
         // Highlight then execute
         this.highlightCells(positions, 'success');
@@ -680,6 +728,28 @@ export class SurgicalGridManager
             positions.push(`${col}-${row}`);
         }
 
+        // Handle variations like "dButton", "aTop", "cBottom", etc.
+        const buttonVariations = [
+            { pattern: /([abcd])button/gi, row: 'Bottom' },
+            { pattern: /([abcd])top/gi, row: 'Top' },
+            { pattern: /([abcd])bottom/gi, row: 'Bottom' },
+            { pattern: /([abcd])btn/gi, row: 'Bottom' },
+        ];
+
+        buttonVariations.forEach(({ pattern, row }) =>
+        {
+            let variationMatch;
+            while ((variationMatch = pattern.exec(text)) !== null)
+            {
+                const col = variationMatch[1].toUpperCase();
+                const position = `${col}-${row}`;
+                if (!positions.includes(position))
+                {
+                    positions.push(position);
+                }
+            }
+        });
+
         // Handle sides: "left side" = A-Top and A-Bottom
         if (text.includes('left side'))
         {
@@ -715,6 +785,7 @@ export class SurgicalGridManager
             }
         }
 
+        console.log(`🎯 parseLocations('${locationText}') -> [${positions.join(', ')}]`);
         return [...new Set(positions)]; // Remove duplicates
     }
 
@@ -723,31 +794,72 @@ export class SurgicalGridManager
      */
     findProgram(programName)
     {
+        console.log(`🎯 findProgram called with: "${programName}"`);
+
         const name = programName.toLowerCase().replace(/\s+/g, '');
+        console.log(`🎯 Normalized name: "${name}"`);
 
         // Direct matches
         if (this.availablePrograms[name])
         {
+            console.log(`🎯 Direct match found: ${this.availablePrograms[name]}`);
             return this.availablePrograms[name];
         }
 
         // Aliases
         const aliases = {
-            'patient': ['patient-info', 'patient-data', 'patientinfo'],
-            'vitals': ['monitoring', 'monitor', 'vital-signs', 'vitalsigns'],
-            'imaging': ['dicom', 'images', 'medical-images'],
-            'vtk': ['3d', '3d-model', '3dmodel', 'visualization'],
-            'voice': ['commands', 'voice-commands', 'camera', 'camera-feed']
+            'patient': ['patient-info', 'patient-data', 'patientinfo', 'patientinformation', 'patient-information'],
+            'vitals': ['monitoring', 'monitor', 'vital-signs', 'vitalsigns', 'procedural-monitoring', 'proceduralmonitoring'],
+            'dicom': ['imaging', 'images', 'medical-images', 'medicalimages', 'scan', 'scans'],
+            '3d': ['vtk', '3d-model', '3dmodel', 'visualization', '3dvisualization', '3d-visualization'],
+            'voice': ['commands', 'voice-commands', 'voicecommands', 'camera', 'camera-feed', 'voice-interface', 'voiceinterface']
         };
 
+        // Check against program keys first
+        for (const [key, programId] of Object.entries(this.availablePrograms))
+        {
+            if (name.includes(key) || key.includes(name))
+            {
+                console.log(`🎯 Program key match found: ${key} -> ${programId}`);
+                return programId;
+            }
+        }
+
+        // Then check aliases
         for (const [key, aliasList] of Object.entries(aliases))
         {
             if (aliasList.some(alias => name.includes(alias) || alias.includes(name)))
             {
+                console.log(`🎯 Alias match found: ${key} -> ${this.availablePrograms[key]}`);
                 return this.availablePrograms[key];
             }
         }
 
+        // Fallback: check if any part of the name matches
+        const words = programName.toLowerCase().split(/\s+/);
+        console.log(`🎯 Checking individual words: [${words.join(', ')}]`);
+
+        for (const word of words)
+        {
+            // Check exact matches with program keys
+            if (this.availablePrograms[word])
+            {
+                console.log(`🎯 Word match found: ${word} -> ${this.availablePrograms[word]}`);
+                return this.availablePrograms[word];
+            }
+
+            // Check if word is contained in any alias
+            for (const [key, aliasList] of Object.entries(aliases))
+            {
+                if (aliasList.some(alias => alias.includes(word) || word.includes(alias)))
+                {
+                    console.log(`🎯 Word alias match found: ${word} via ${key} -> ${this.availablePrograms[key]}`);
+                    return this.availablePrograms[key];
+                }
+            }
+        }
+
+        console.log(`🎯 findProgram('${programName}') -> null (not found)`);
         return null;
     }
 
@@ -1302,9 +1414,67 @@ export class SurgicalGridManager
             case 'monitoring-panel':
                 // Initialize charts if needed
                 break;
+            case 'patient-panel':
+                // Re-initialize patient panel collapsible functionality
+                setTimeout(() =>
+                {
+                    this.initializePatientPanelInCell(position);
+                }, 500);
+                break;
             default:
                 break;
         }
+    }
+
+    /**
+     * Initialize patient panel functionality in a grid cell
+     * Re-adds event listeners for collapsible sections that are lost during cloning
+     */
+    initializePatientPanelInCell(position)
+    {
+        console.log('🎯 Initializing patient panel functionality in position:', position);
+
+        // Find all collapsible headers in this specific cell
+        const cellContent = document.getElementById(`content-${position}`);
+        if (!cellContent)
+        {
+            console.error('❌ Cell content not found for patient panel initialization:', position);
+            return;
+        }
+
+        const collapsibleHeaders = cellContent.querySelectorAll('.collapsible-header');
+        console.log('🎯 Found', collapsibleHeaders.length, 'collapsible headers in position:', position);
+
+        collapsibleHeaders.forEach((header, index) =>
+        {
+            // Remove any existing event listeners to avoid duplicates
+            const newHeader = header.cloneNode(true);
+            header.parentNode.replaceChild(newHeader, header);
+
+            // Add the click event listener
+            newHeader.addEventListener('click', () =>
+            {
+                console.log('🎯 Collapsible header clicked in position:', position, 'header index:', index);
+
+                const isCollapsed = newHeader.classList.contains('collapsed');
+                const contentDiv = newHeader.nextElementSibling;
+
+                if (contentDiv && contentDiv.classList.contains('collapsible-content'))
+                {
+                    // Toggle collapsed state
+                    newHeader.classList.toggle('collapsed', !isCollapsed);
+                    contentDiv.classList.toggle('collapsed', !isCollapsed);
+
+                    console.log('🎯 Toggled section to:', !isCollapsed ? 'collapsed' : 'expanded');
+                }
+                else
+                {
+                    console.error('❌ Could not find corresponding content div for header');
+                }
+            });
+        });
+
+        console.log('✅ Patient panel collapsible functionality initialized for position:', position);
     }
 
     /**
@@ -1966,8 +2136,6 @@ export class SurgicalGridManager
      */
     createDemoLayout()
     {
-
-
         // Check what components are available
         this.logAvailableComponents();
 
@@ -1975,28 +2143,113 @@ export class SurgicalGridManager
         this.clearOldDemoLayouts();
 
         // Clear current screen first
-
         this.clearScreen();
 
+        // Use the procedure-specific layout instead of generic one
+        this.loadProcedureLayout(this.currentProcedure);
 
+        setTimeout(() =>
+        {
+            this.showFeedback('OR layout ready! Try: "Move vitals to C-Top" or "Swap A-Top with D-Bottom"', 'success');
+        }, 2000);
+    }
 
-        // Use the openProgram method to properly span components across multiple cells
+    /**
+     * Create PAD Angioplasty specific layout
+     * 3D Visualization: A-Top, A-Bottom, B-Top, B-Bottom (spanning over 4)
+     * Patient Information: D-Bottom
+     * DICOM Viewer: C-Top, C-Bottom
+     * Voice Commands: D-Top
+     * (Don't show Procedural Monitoring)
+     */
+    createPadAngioplastyLayout()
+    {
+        console.log('Creating PAD Angioplasty layout');
 
-        this.openProgram('patient-panel', ['A-Top', 'A-Bottom']);
+        // 3D Visualization spanning 4 cells (A-Top, A-Bottom, B-Top, B-Bottom)
+        this.openProgram('vtk-viewer', ['A-Top', 'A-Bottom', 'B-Top', 'B-Bottom']);
 
-
-        this.openProgram('vtk-viewer', ['B-Top', 'B-Bottom']);
-
-
+        // DICOM Viewer spanning C-Top and C-Bottom
         this.openProgram('dicom-viewer', ['C-Top', 'C-Bottom']);
 
-
+        // Voice Commands in D-Top
         this.openProgram('voice-interface', ['D-Top']);
 
+        // Patient Information in D-Bottom
+        this.openProgram('patient-panel', ['D-Bottom']);
 
+        // Save as PAD Angioplasty default layout
+        this.saveCurrentLayout('PAD Angioplasty Default');
+        const savedLayouts = this.loadSavedLayouts();
+        const layoutObj = savedLayouts.find(l => l.name === 'PAD Angioplasty Default');
+        if (layoutObj)
+        {
+            layoutObj.isDefault = true;
+            layoutObj.procedureType = 'pad_angioplasty';
+            this.savedLayouts = savedLayouts;
+            this.saveSavedLayouts();
+        }
+
+        this.updatePresetsDisplay();
+        console.log('PAD Angioplasty layout created successfully');
+    }
+
+    /**
+     * Create EP Ablation specific layout
+     * 3D Visualization: A-Bottom, B-Bottom
+     * DICOM Viewer: C-Top, D-Top
+     * Patient Information: C-Bottom
+     * Voice Commands: D-Bottom
+     * Procedural Monitoring: A-Top, B-Top
+     */
+    createEpAblationLayout()
+    {
+        console.log('Creating EP Ablation layout');
+
+        // 3D Visualization spanning A-Bottom and B-Bottom
+        this.openProgram('vtk-viewer', ['A-Bottom', 'B-Bottom']);
+
+        // DICOM Viewer spanning C-Top and D-Top
+        this.openProgram('dicom-viewer', ['C-Top', 'D-Top']);
+
+        // Patient Information in C-Bottom
+        this.openProgram('patient-panel', ['C-Bottom']);
+
+        // Voice Commands in D-Bottom
+        this.openProgram('voice-interface', ['D-Bottom']);
+
+        // Procedural Monitoring spanning A-Top and B-Top
+        this.openProgram('monitoring-panel', ['A-Top', 'B-Top']);
+
+        // Save as EP Ablation default layout
+        this.saveCurrentLayout('EP Ablation Default');
+        const savedLayouts = this.loadSavedLayouts();
+        const layoutObj = savedLayouts.find(l => l.name === 'EP Ablation Default');
+        if (layoutObj)
+        {
+            layoutObj.isDefault = true;
+            layoutObj.procedureType = 'ep_ablation';
+            this.savedLayouts = savedLayouts;
+            this.saveSavedLayouts();
+        }
+
+        this.updatePresetsDisplay();
+        console.log('EP Ablation layout created successfully');
+    }
+
+    /**
+     * Create default/fallback layout (original demo layout)
+     */
+    createDefaultLayout()
+    {
+        console.log('Creating default layout');
+
+        // Use the openProgram method to properly span components across multiple cells
+        this.openProgram('patient-panel', ['A-Top', 'A-Bottom']);
+        this.openProgram('vtk-viewer', ['B-Top', 'B-Bottom']);
+        this.openProgram('dicom-viewer', ['C-Top', 'C-Bottom']);
+        this.openProgram('voice-interface', ['D-Top']);
         this.openProgram('monitoring-panel', ['D-Bottom']);
-
-
 
         // Save as default demo layout
         this.saveCurrentLayout('OR Default Layout');
@@ -2010,13 +2263,7 @@ export class SurgicalGridManager
         }
 
         this.updatePresetsDisplay();
-
-        setTimeout(() =>
-        {
-            this.showFeedback('OR layout ready! Try: "Move vitals to C-Top" or "Swap A-Top with D-Bottom"', 'success');
-        }, 2000);
-
-
+        console.log('Default layout created successfully');
     }
 
     /**

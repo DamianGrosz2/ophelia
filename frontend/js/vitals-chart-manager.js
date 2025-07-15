@@ -26,8 +26,15 @@ export class VitalsChartManager
         this.updateInterval = null;
         this.updateFrequency = 2000; // 2 seconds
 
+        // Vital signs simulation state
+        this.currentHeartRate = 75; // Starting baseline
+        this.currentSystolicBP = 130;
+        this.currentDiastolicBP = 80;
+        this.heartRateTrend = 0; // For gradual trending
+
         // Delay initialization to allow components to be loaded
-        setTimeout(() => {
+        setTimeout(() =>
+        {
             this.initializeElements();
             this.initializeChart();
         }, 1000);
@@ -264,15 +271,33 @@ export class VitalsChartManager
 
         this.updateInterval = setInterval(() =>
         {
-            // Generate realistic vital signs
-            const hr = 70 + Math.random() * 20; // 70-90 BPM
-            const sbp = 120 + Math.random() * 40; // 120-160 mmHg
-            const dbp = 70 + Math.random() * 20; // 70-90 mmHg
+            // Generate more realistic vital signs with gradual changes
+
+            // Heart Rate: Small changes (±1-3 BPM) with occasional trending
+            const hrVariation = (Math.random() - 0.5) * 3; // ±1.5 BPM base variation
+            this.heartRateTrend += (Math.random() - 0.5) * 0.5; // Slow trending
+            this.heartRateTrend = Math.max(-2, Math.min(2, this.heartRateTrend)); // Limit trend
+
+            this.currentHeartRate += hrVariation + this.heartRateTrend;
+
+            // Keep heart rate in realistic bounds (65-95 BPM)
+            this.currentHeartRate = Math.max(65, Math.min(95, this.currentHeartRate));
+
+            // Blood Pressure: More gradual changes
+            const sbpVariation = (Math.random() - 0.5) * 8; // ±4 mmHg variation
+            const dbpVariation = (Math.random() - 0.5) * 6; // ±3 mmHg variation
+
+            this.currentSystolicBP += sbpVariation;
+            this.currentDiastolicBP += dbpVariation;
+
+            // Keep BP in realistic bounds
+            this.currentSystolicBP = Math.max(110, Math.min(160, this.currentSystolicBP));
+            this.currentDiastolicBP = Math.max(65, Math.min(95, this.currentDiastolicBP));
 
             this.addDataPoint(
-                Math.round(hr),
-                Math.round(sbp),
-                Math.round(dbp)
+                Math.round(this.currentHeartRate),
+                Math.round(this.currentSystolicBP),
+                Math.round(this.currentDiastolicBP)
             );
         }, this.updateFrequency);
 
@@ -290,6 +315,17 @@ export class VitalsChartManager
             this.updateInterval = null;
             console.log('Real-time vitals updates stopped');
         }
+    }
+
+    /**
+     * Reset vital signs to baseline values
+     */
+    resetVitalSigns()
+    {
+        this.currentHeartRate = 75;
+        this.currentSystolicBP = 130;
+        this.currentDiastolicBP = 80;
+        this.heartRateTrend = 0;
     }
 
     /**
@@ -311,6 +347,9 @@ export class VitalsChartManager
         });
 
         this.vitalsChart.update();
+
+        // Reset vital signs simulation to baseline
+        this.resetVitalSigns();
     }
 
     /**

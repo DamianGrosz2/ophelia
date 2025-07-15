@@ -14,6 +14,10 @@ export class ChatInterface
         this.sendBtn = null;
         this.ttsAudio = null;
         this.stopAudioBtn = null;
+        this.speedButtons = null;
+
+        // Audio settings
+        this.currentPlaybackRate = 1.0;
 
         // Event callbacks
         this.onMessageSent = null;
@@ -33,6 +37,11 @@ export class ChatInterface
         this.sendBtn = document.getElementById('send-btn');
         this.ttsAudio = document.getElementById('tts-audio');
         this.stopAudioBtn = document.getElementById('stop-audio-btn');
+        this.speedButtons = {
+            normal: document.getElementById('speed-normal-btn'),
+            fast: document.getElementById('speed-fast-btn'),
+            faster: document.getElementById('speed-faster-btn')
+        };
 
         if (!this.chatHistory || !this.textInput || !this.sendBtn)
         {
@@ -42,6 +51,9 @@ export class ChatInterface
 
         // Create stop audio button if it doesn't exist
         this.createStopAudioButton();
+
+        // Setup speed controls
+        this.setupSpeedControls();
     }
 
     /**
@@ -88,6 +100,9 @@ export class ChatInterface
                 this.stopAudio();
             }
         });
+
+        // Setup speed control event listeners
+        this.setupSpeedEventListeners();
     }
 
     /**
@@ -217,6 +232,81 @@ export class ChatInterface
     }
 
     /**
+     * Setup speed controls
+     */
+    setupSpeedControls()
+    {
+        // Set initial playback rate on the audio element
+        if (this.ttsAudio)
+        {
+            this.ttsAudio.playbackRate = this.currentPlaybackRate;
+        }
+    }
+
+    /**
+     * Setup speed control event listeners
+     */
+    setupSpeedEventListeners()
+    {
+        if (this.speedButtons.normal)
+        {
+            this.speedButtons.normal.addEventListener('click', () => this.setPlaybackSpeed(1.0));
+        }
+        if (this.speedButtons.fast)
+        {
+            this.speedButtons.fast.addEventListener('click', () => this.setPlaybackSpeed(1.25));
+        }
+        if (this.speedButtons.faster)
+        {
+            this.speedButtons.faster.addEventListener('click', () => this.setPlaybackSpeed(1.5));
+        }
+    }
+
+    /**
+     * Set playback speed
+     */
+    setPlaybackSpeed(rate)
+    {
+        this.currentPlaybackRate = rate;
+
+        // Update audio element playback rate
+        if (this.ttsAudio)
+        {
+            this.ttsAudio.playbackRate = rate;
+        }
+
+        // Update button active states
+        this.updateSpeedButtonStates(rate);
+
+        console.log(`Playback speed set to ${rate}x`);
+    }
+
+    /**
+     * Update speed button active states
+     */
+    updateSpeedButtonStates(activeRate)
+    {
+        // Remove active class from all buttons
+        Object.values(this.speedButtons).forEach(btn =>
+        {
+            if (btn) btn.classList.remove('active');
+        });
+
+        // Add active class to the corresponding button
+        const buttonMap = {
+            1.0: this.speedButtons.normal,
+            1.25: this.speedButtons.fast,
+            1.5: this.speedButtons.faster
+        };
+
+        const activeButton = buttonMap[activeRate];
+        if (activeButton)
+        {
+            activeButton.classList.add('active');
+        }
+    }
+
+    /**
      * Play TTS audio
      */
     playAudio(audioUrl)
@@ -230,6 +320,7 @@ export class ChatInterface
         console.log('Playing TTS audio:', audioUrl);
 
         this.ttsAudio.src = audioUrl;
+        this.ttsAudio.playbackRate = this.currentPlaybackRate;
         this.ttsAudio.play().catch(error =>
         {
             console.error('Error playing TTS audio:', error);
@@ -265,7 +356,7 @@ export class ChatInterface
         if ('speechSynthesis' in window)
         {
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = 0.9;
+            utterance.rate = this.currentPlaybackRate * 0.9; // Apply current speed to base rate
             utterance.pitch = 1;
             utterance.volume = 0.8;
             speechSynthesis.speak(utterance);
