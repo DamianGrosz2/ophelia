@@ -16,6 +16,7 @@ export class TranscriptionManager
         this.mediaRecorder = null;
         this.recordingTimer = null;
         this.segmentInterval = null;
+        this.activeSegmentRecorders = []; // Track active segment recorders
 
         // UI elements
         this.startBtn = null;
@@ -146,6 +147,7 @@ export class TranscriptionManager
             // Stop recording
             this.stopMicrophoneRecording();
             this.stopSegmentRecording();
+            this.stopActiveSegmentRecorders(); // Stop any in-progress segments
             this.stopUITimer();
 
             // Stop transcription session on backend
@@ -251,6 +253,25 @@ export class TranscriptionManager
         }
     }
 
+    stopActiveSegmentRecorders()
+    {
+        // Stop all active segment recorders to prevent race condition
+        this.activeSegmentRecorders.forEach(recorder =>
+        {
+            try
+            {
+                if (recorder.state !== 'inactive')
+                {
+                    recorder.stop();
+                }
+            } catch (error)
+            {
+                console.warn('Error stopping segment recorder:', error);
+            }
+        });
+        this.activeSegmentRecorders = [];
+    }
+
     async recordSegment()
     {
         if (!this.isRecording || !this.currentSessionId)
@@ -273,7 +294,11 @@ export class TranscriptionManager
                 mimeType: 'audio/webm'
             });
 
+            // Track this recorder to prevent race conditions
+            this.activeSegmentRecorders.push(segmentRecorder);
+
             const audioBlobs = [];
+            const sessionIdSnapshot = this.currentSessionId; // Capture session ID at start
 
             segmentRecorder.ondataavailable = (event) =>
             {
@@ -287,6 +312,20 @@ export class TranscriptionManager
             {
                 try
                 {
+                    // Remove from active recorders
+                    const index = this.activeSegmentRecorders.indexOf(segmentRecorder);
+                    if (index > -1)
+                    {
+                        this.activeSegmentRecorders.splice(index, 1);
+                    }
+
+                    // Check if session is still active before sending
+                    if (!this.isRecording || !sessionIdSnapshot || sessionIdSnapshot !== this.currentSessionId)
+                    {
+                        console.log('Session no longer active, skipping segment upload');
+                        return;
+                    }
+
                     const audioBlob = new Blob(audioBlobs, { type: 'audio/webm' });
 
                     // Calculate timestamp
@@ -296,7 +335,7 @@ export class TranscriptionManager
                     // Send segment to backend
                     const formData = new FormData();
                     formData.append('audio', audioBlob, 'segment.webm');
-                    formData.append('session_id', this.currentSessionId);
+                    formData.append('session_id', sessionIdSnapshot);
                     formData.append('timestamp', timestamp);
 
                     await fetch(`${this.apiClient.baseUrl}/transcription/segment`, {
