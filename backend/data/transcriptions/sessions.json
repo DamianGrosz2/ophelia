@@ -6,7 +6,54 @@
       "procedure_type": "pad_angioplasty",
       "status": "completed",
       "end_time": "2025-07-16T00:41:28.041606"
+    },
+    {
+      "session_id": "session_002",
+      "start_time": "2025-07-16T10:58:47.154126",
+      "procedure_type": "pad_angioplasty",
+      "status": "completed",
+      "end_time": "2025-07-16T10:58:57.296427"
+    },
+    {
+      "session_id": "session_003",
+      "start_time": "2025-07-16T11:00:54.552860",
+      "procedure_type": "pad_angioplasty",
+      "status": "completed",
+      "end_time": "2025-07-16T11:00:58.085176"
+    },
+    {
+      "session_id": "session_004",
+      "start_time": "2025-07-16T15:34:38.104864",
+      "procedure_type": "pad_angioplasty",
+      "status": "completed",
+      "end_time": "2025-07-16T15:34:45.702705"
+    },
+    {
+      "session_id": "session_005",
+      "start_time": "2025-07-16T15:36:18.422738",
+      "procedure_type": "pad_angioplasty",
+      "status": "active"
+    },
+    {
+      "session_id": "session_006",
+      "start_time": "2025-07-16T15:36:57.983409",
+      "procedure_type": "pad_angioplasty",
+      "status": "active"
+    },
+    {
+      "session_id": "session_007",
+      "start_time": "2025-07-16T15:37:06.066122",
+      "procedure_type": "pad_angioplasty",
+      "status": "completed",
+      "end_time": "2025-07-16T15:37:19.292955"
+    },
+    {
+      "session_id": "session_008",
+      "start_time": "2025-07-16T15:37:36.617564",
+      "procedure_type": "pad_angioplasty",
+      "status": "completed",
+      "end_time": "2025-07-16T15:37:41.642546"
     }
   ],
-  "last_session_id": 1
+  "last_session_id": 8
 }

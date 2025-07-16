@@ -113,14 +113,6 @@ export class VoiceRecorder
             console.log('🔄 Event delegation already set up, skipping...');
         }
 
-        // Stop listening button
-        if (this.stopListeningBtn)
-        {
-            this.stopListeningBtn.addEventListener('click', () =>
-            {
-                this.stopContinuousListening();
-            });
-        }
     }
 
     /**
@@ -426,7 +418,6 @@ export class VoiceRecorder
         {
             // Update element references even if controls already exist
             this.listeningToggle = document.getElementById('listening-toggle');
-            this.stopListeningBtn = document.getElementById('stop-listening-btn');
             this.listeningStatus = document.getElementById('listening-status');
             return;
         }
@@ -443,10 +434,6 @@ export class VoiceRecorder
                 </label>
                 <div class="listening-status" id="listening-status">Ready</div>
             </div>
-            <button id="stop-listening-btn" class="stop-listening-btn" style="display: none;">
-                <span class="stop-icon">⏹</span>
-                Stop Listening
-            </button>
         `;
 
         // Insert at the beginning of the voice interface
@@ -461,7 +448,6 @@ export class VoiceRecorder
 
         // Update element references
         this.listeningToggle = document.getElementById('listening-toggle');
-        this.stopListeningBtn = document.getElementById('stop-listening-btn');
         this.listeningStatus = document.getElementById('listening-status');
     }
 
@@ -703,21 +689,46 @@ export class VoiceRecorder
         {
             this.listeningToggle.checked = isListening;
         }
-
-        if (this.stopListeningBtn)
-        {
-            this.stopListeningBtn.style.display = isListening ? 'flex' : 'none';
-        }
     }
 
     /**
-     * Update listening status text
+     * Update listening status text with animations
      */
     updateListeningStatus(status)
     {
         if (this.listeningStatus)
         {
-            this.listeningStatus.textContent = status;
+            // Clear existing animations and classes
+            this.listeningStatus.classList.remove('listening', 'processing');
+            
+            // Clear any existing animation elements
+            const existingAnimation = this.listeningStatus.querySelector('.listening-animation, .processing-animation');
+            if (existingAnimation) {
+                existingAnimation.remove();
+            }
+            
+            // Determine state based on status text
+            let animationHTML = '';
+            if (status.includes('Listening for "Ophelia"') || status.includes('Wake word detected') || status.includes('Listening... Speak')) {
+                this.listeningStatus.classList.add('listening');
+                animationHTML = `
+                    <div class="listening-animation">
+                        <div class="wave"></div>
+                        <div class="wave"></div>
+                        <div class="wave"></div>
+                    </div>
+                `;
+            } else if (status.includes('Processing') || status.includes('Transcribing') || status.includes('processing')) {
+                this.listeningStatus.classList.add('processing');
+                animationHTML = `
+                    <div class="processing-animation">
+                        <div class="spinner"></div>
+                    </div>
+                `;
+            }
+            
+            // Update status with animation
+            this.listeningStatus.innerHTML = animationHTML + status;
         }
     }
 

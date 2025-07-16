@@ -462,11 +462,11 @@ export class TranscriptionManager
                     this.formatElapsedTime(new Date() - this.recordingStartTime) :
                     '00:00:00';
                 this.statusDisplay.textContent = `Recording: ${elapsed}`;
-                this.statusDisplay.className = 'transcription-status recording';
+                this.statusDisplay.className = 'transcription-status-inline recording';
             } else
             {
                 this.statusDisplay.textContent = 'Not Recording';
-                this.statusDisplay.className = 'transcription-status idle';
+                this.statusDisplay.className = 'transcription-status-inline idle';
             }
         }
     }

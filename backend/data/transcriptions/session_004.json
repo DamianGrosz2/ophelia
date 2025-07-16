@@ -1,0 +1,109 @@
+{
+  "session_id": "session_004",
+  "transcript_segments": [
+    {
+      "timestamp": "00:00:07",
+      "text": ""
+    }
+  ],
+  "full_transcript": "",
+  "procedure_context": {
+    "patientId": "PAD-001",
+    "procedureType": "Endovascular PAD Angioplasty",
+    "scheduledTime": "2025-01-10T09:00:00Z",
+    "estimatedDuration": 120,
+    "room": "OR-C3",
+    "equipment": "Mobile C-arm Siemens Cios Alpha",
+    "operator": "Dr. Sarah Chen",
+    "patient": {
+      "demographics": {
+        "name": "Robert Martinez",
+        "mrn": "MRN-789456",
+        "age": 68,
+        "gender": "Male",
+        "bmi": 28.5,
+        "weight": 85,
+        "height": 175
+      },
+      "medicalHistory": {
+        "previousPAD": true,
+        "previousInterventions": [
+          "Left SFA angioplasty 2023"
+        ],
+        "diabetes": "Type 2, well-controlled",
+        "smokingHistory": "Former smoker, quit 2020",
+        "comorbidities": [
+          "Hypertension",
+          "Hyperlipidemia",
+          "CAD"
+        ]
+      },
+      "imaging": {
+        "abi": {
+          "right": 0.55,
+          "left": 0.48,
+          "date": "2025-01-08"
+        },
+        "ctAngiography": {
+          "findings": "Severe stenosis right SFA mid-segment, 85% occlusion",
+          "lesionLength": "12 cm",
+          "vesselDiameter": "5.2 mm",
+          "date": "2025-01-05"
+        }
+      },
+      "labs": {
+        "creatinine": {
+          "value": 1.2,
+          "unit": "mg/dL",
+          "date": "2025-01-09",
+          "egfr": 58
+        },
+        "platelets": {
+          "value": 245000,
+          "unit": "/\u03bcL",
+          "date": "2025-01-09"
+        },
+        "inr": {
+          "value": 1.1,
+          "date": "2025-01-09"
+        },
+        "hemoglobin": {
+          "value": 13.2,
+          "unit": "g/dL",
+          "date": "2025-01-09"
+        }
+      },
+      "medications": [
+        "Clopidogrel 75mg daily",
+        "Aspirin 81mg daily",
+        "Atorvastatin 40mg daily",
+        "Metformin 1000mg BID"
+      ],
+      "allergies": [
+        "Iodine contrast - rash",
+        "Penicillin - hives"
+      ]
+    },
+    "procedurePlan": {
+      "accessSite": "Right common femoral artery",
+      "targetVessel": "Right superficial femoral artery",
+      "plannedIntervention": "Balloon angioplasty with provisional stenting",
+      "deviceSelection": {
+        "balloon": "6mm x 120mm drug-coated balloon",
+        "guidewire": "0.018\" hydrophilic wire",
+        "sheath": "6Fr arterial sheath"
+      }
+    },
+    "intraopData": {
+      "vitals": {
+        "bloodPressure": "142/88",
+        "heartRate": 78,
+        "o2Sat": 98
+      },
+      "contrastUsed": 45,
+      "maxContrast": 75,
+      "fluoroscopyTime": 12.5,
+      "radiationDose": 245
+    }
+  }
+}

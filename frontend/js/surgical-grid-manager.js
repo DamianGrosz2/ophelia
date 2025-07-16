@@ -7,6 +7,7 @@
 
 import { VtkViewer } from '../vtk-viewer.js';
 import { DicomViewer } from '../dicom-viewer.js';
+import { ImageViewer } from '../image-viewer.js';
 
 export class SurgicalGridManager
 {
@@ -38,6 +39,7 @@ export class SurgicalGridManager
             'patient': 'patient-panel',
             'dicom': 'dicom-viewer',
             '3d': 'vtk-viewer',
+            'images': 'image-viewer',
             'voice': 'voice-interface',
         };
 
@@ -1033,6 +1035,17 @@ export class SurgicalGridManager
 
         // Use openProgram to handle spanning properly
         this.openProgram(program, targetPositions);
+
+        if (program === 'voice-interface')
+        {
+            if (window.orVoiceAssistant && window.orVoiceAssistant.voiceRecorder)
+            {
+                setTimeout(() =>
+                {
+                    window.orVoiceAssistant.voiceRecorder.initialize();
+                }, 100);
+            }
+        }
     }
 
     /**
@@ -1203,6 +1216,7 @@ export class SurgicalGridManager
             'voice-interface': 'voice-interface',
             'monitoring-panel': 'monitoring-panel',
             'vtk-viewer': 'vtk-viewer',
+            'image-viewer': 'image-viewer',
             'dicom-viewer': 'dicom-viewer'
         };
 
@@ -1273,6 +1287,7 @@ export class SurgicalGridManager
             'voice-interface': 'Voice Commands',
             'monitoring-panel': 'Procedural Monitoring',
             'vtk-viewer': '3D Visualization',
+            'image-viewer': 'Image Viewer',
             'dicom-viewer': 'DICOM Viewer'
         };
         return displayNames[program] || program;
@@ -1343,6 +1358,10 @@ export class SurgicalGridManager
 
             case 'vtk-viewer':
                 this.initializeVtkViewerInCell(position);
+                break;
+
+            case 'image-viewer':
+                this.initializeImageViewerInCell(position);
                 break;
 
             case 'dicom-viewer':
@@ -1759,6 +1778,16 @@ export class SurgicalGridManager
             this.openProgram(component, positions);
         }
 
+        // After loading layout, check if voice-interface is present and re-initialize
+        const voiceInterfacePositions = componentGroups.get('voice-interface');
+        if (voiceInterfacePositions && voiceInterfacePositions.length > 0) {
+            if (window.orVoiceAssistant && window.orVoiceAssistant.voiceRecorder) {
+                setTimeout(() => {
+                    window.orVoiceAssistant.voiceRecorder.initialize();
+                }, 100);
+            }
+        }
+
 
     }
 
@@ -2098,6 +2127,15 @@ export class SurgicalGridManager
         }
 
         this.hideReorderOverlay();
+
+        // If voice interface was expanded, re-initialize it
+        if (this.cellContents.get(sourcePosition) === 'voice-interface') {
+            if (window.orVoiceAssistant && window.orVoiceAssistant.voiceRecorder) {
+                setTimeout(() => {
+                    window.orVoiceAssistant.voiceRecorder.initialize();
+                }, 100);
+            }
+        }
     }
 
     /**
@@ -2251,7 +2289,7 @@ export class SurgicalGridManager
 
     /**
      * Create PAD Angioplasty specific layout
-     * 3D Visualization: A-Top, A-Bottom, B-Top, B-Bottom (spanning over 4)
+     * Image Viewer: A-Top, A-Bottom, B-Top, B-Bottom (spanning over 4)
      * Patient Information: D-Bottom
      * DICOM Viewer: C-Top, C-Bottom
      * Voice Commands: D-Top
@@ -2261,8 +2299,8 @@ export class SurgicalGridManager
     {
         console.log('Creating PAD Angioplasty layout');
 
-        // 3D Visualization spanning 4 cells (A-Top, A-Bottom, B-Top, B-Bottom)
-        this.openProgram('vtk-viewer', ['A-Top', 'A-Bottom', 'B-Top', 'B-Bottom']);
+        // Image Viewer spanning 4 cells (A-Top, A-Bottom, B-Top, B-Bottom)
+        this.openProgram('image-viewer', ['A-Top', 'A-Bottom', 'B-Top', 'B-Bottom']);
 
         // DICOM Viewer spanning C-Top and C-Bottom
         this.openProgram('dicom-viewer', ['C-Top', 'C-Bottom']);
@@ -2384,7 +2422,7 @@ export class SurgicalGridManager
 
 
         // Check for each expected component
-        const expectedComponents = ['patient-panel', 'voice-interface', 'monitoring-panel', 'vtk-viewer', 'dicom-viewer'];
+        const expectedComponents = ['patient-panel', 'voice-interface', 'monitoring-panel', 'vtk-viewer', 'image-viewer', 'dicom-viewer'];
 
         expectedComponents.forEach(componentId =>
         {
@@ -2687,6 +2725,51 @@ export class SurgicalGridManager
     }
 
     /**
+     * Initialize Image viewer functionality in a grid cell
+     */
+    initializeImageViewerInCell(position)
+    {
+        console.log(`Initializing Image viewer in cell: ${position}`);
+
+        // Initialize Image viewer and load first image by default
+        setTimeout(() =>
+        {
+            const imageContainer = document.querySelector(`#content-${position} .image-viewer-container`);
+            if (imageContainer)
+            {
+                // Ensure the Image container has proper dimensions
+                imageContainer.style.width = '100%';
+                imageContainer.style.height = '100%';
+                imageContainer.style.minHeight = '400px';
+                imageContainer.style.position = 'relative';
+                imageContainer.style.overflow = 'hidden';
+
+                // Initialize the Image viewer
+                const imageViewer = new ImageViewer(
+                    imageContainer,
+                    (message, level) => this.alertManager?.showAlert(message, level)
+                );
+                window.activeImageViewer = imageViewer;
+
+                // Wait for initialization to complete
+                setTimeout(() =>
+                {
+                    if (imageViewer && imageViewer.refreshImageList)
+                    {
+                        imageViewer.refreshImageList();
+                        console.log('🎯 Image viewer refreshed for grid cell');
+                    }
+                }, 100);
+
+                // The Image viewer will automatically load first image after refresh
+            } else
+            {
+                console.error('Could not find .image-viewer-container for Image viewer in position:', position);
+            }
+        }, 500);
+    }
+
+    /**
      * Initialize DICOM viewer functionality in a grid cell
      */
     initializeDicomViewerInCell(position)
@@ -2718,6 +2801,23 @@ export class SurgicalGridManager
     initializeMonitoringPanelInCell(position)
     {
         console.log('🎯 Initializing monitoring panel functionality in position:', position);
-        // Initialize charts if needed - implementation can be added here
+
+        // Initialize charts in this cell
+        setTimeout(() =>
+        {
+            const cellContent = document.querySelector(`#content-${position}`);
+            if (cellContent)
+            {
+                const chartCanvas = cellContent.querySelector('#vitalsChart');
+                if (chartCanvas && window.vitalsChartManager)
+                {
+                    // Reinitialize the chart for this specific cell
+                    window.vitalsChartManager.initializeInCell(cellContent);
+                } else
+                {
+                    console.log('Chart canvas or vitals chart manager not found in cell:', position);
+                }
+            }
+        }, 100);
     }
 } 

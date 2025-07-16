@@ -1,0 +1,248 @@
+<!-- Image Viewer Component -->
+<div class="image-viewer-container panel" id="panel-6">
+    <div class="image-viewer-header">
+        <div class="image-header-row image-header-row-nav">
+            <button class="image-nav-btn" id="header-prev-btn">⬅️ Previous</button>
+            <span class="image-counter" id="image-counter">0 / 0</span>
+            <button class="image-nav-btn" id="header-next-btn">Next ➡️</button>
+            <select class="image-select" id="image-file-select">
+                <option value="">Select Image...</option>
+            </select>
+        </div>
+        <div class="image-header-row image-header-row-zoom">
+            <button class="image-zoom-btn" id="zoom-out-btn">🔍➖</button>
+            <span class="zoom-level" id="zoom-level">100%</span>
+            <button class="image-zoom-btn" id="zoom-in-btn">🔍➕</button>
+        </div>
+    </div>
+
+    <div class="image-viewer-content">
+        <!-- Image display area -->
+        <div class="image-display-area" id="image-display-area">
+            <img id="main-image" src="" alt="Medical Image" style="display: none;">
+            <div class="image-placeholder" id="image-placeholder">
+                <div class="placeholder-content">
+                    <div class="placeholder-icon">🖼️</div>
+                    <p>No image loaded</p>
+                    <p class="placeholder-hint">Select an image from the dropdown above</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="image-viewer-footer">
+        <div class="image-info">
+            <span class="image-filename" id="image-filename">No image selected</span>
+        </div>
+        <div class="image-scale-info" id="image-scale-info" style="display: none;">
+            Scale: 100%
+        </div>
+    </div>
+</div>
+
+<style>
+    .image-viewer-container {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        height: 100vh;
+        background: #000;
+        border-radius: 8px;
+        overflow: hidden;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .image-viewer-header {
+        background: #111;
+        padding: 0 16px 8px 16px;
+        border-bottom: 1px solid #222;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        flex-shrink: 0;
+    }
+
+    .image-header-row {
+        display: flex;
+        width: 100%;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        padding-top: 8px;
+        padding-bottom: 4px;
+    }
+
+    .image-header-row-zoom {
+        border-top: 1px solid #222;
+        margin-top: 2px;
+        padding-top: 6px;
+        padding-bottom: 8px;
+    }
+
+    .image-select {
+        background: #222;
+        border: 1px solid #333;
+        border-radius: 4px;
+        color: #fff;
+        padding: 6px 12px;
+        font-size: 14px;
+        min-width: 150px;
+    }
+
+    .image-select:focus {
+        outline: none;
+        border-color: #007acc;
+    }
+
+    .image-viewer-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        background: #000;
+    }
+
+    .image-display-area {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: #000;
+        position: relative;
+        overflow: auto;
+        min-height: 300px;
+        cursor: grab;
+    }
+
+    .image-display-area:active {
+        cursor: grabbing;
+    }
+
+    .image-placeholder {
+        text-align: center;
+        color: #888;
+    }
+
+    .placeholder-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .placeholder-icon {
+        font-size: 48px;
+        opacity: 0.5;
+    }
+
+    .placeholder-hint {
+        font-size: 12px;
+        opacity: 0.7;
+    }
+
+    #main-image {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        cursor: grab;
+        transition: transform 0.2s;
+    }
+
+    #main-image:active {
+        cursor: grabbing;
+    }
+
+    .image-nav-btn {
+        background: #007acc;
+        border: none;
+        border-radius: 4px;
+        color: #fff;
+        padding: 6px 12px;
+        font-size: 13px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .image-nav-btn:hover {
+        background: #0056a3;
+    }
+
+    .image-nav-btn:disabled {
+        background: #555;
+        cursor: not-allowed;
+    }
+
+    .image-zoom-btn {
+        background: #28a745;
+        border: none;
+        border-radius: 4px;
+        color: #fff;
+        padding: 6px 12px;
+        font-size: 13px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .image-zoom-btn:hover {
+        background: #1e7e34;
+    }
+
+    .image-counter {
+        color: #ccc;
+        font-size: 13px;
+        min-width: 50px;
+        text-align: center;
+    }
+
+    .zoom-level {
+        color: #ccc;
+        font-size: 13px;
+        min-width: 50px;
+        text-align: center;
+        font-weight: bold;
+    }
+
+    .image-viewer-footer {
+        background: #111;
+        padding: 10px 16px 10px 16px;
+        border-top: 1px solid #222;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-shrink: 0;
+        margin-top: auto;
+    }
+
+    .image-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .image-filename {
+        color: #ccc;
+        font-size: 13px;
+        font-family: monospace;
+    }
+
+    .image-scale-info {
+        color: #007acc;
+        font-size: 13px;
+        font-weight: bold;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .image-header-row {
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .image-nav-btn,
+        .image-zoom-btn {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+    }
+</style>

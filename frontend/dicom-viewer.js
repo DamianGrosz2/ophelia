@@ -167,12 +167,6 @@ export class DicomViewer
             cornerstoneTools.addStackStateManager(this.dicomElement, ['stack']);
             cornerstoneTools.addToolState(this.dicomElement, 'stack', stack);
 
-            
-            if (this.onAlert)
-            {
-                this.onAlert(`Loaded series ${seriesId}`, 'success');
-            }
-
         } catch (error)
         {
             

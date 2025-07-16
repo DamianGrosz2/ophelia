@@ -374,6 +374,13 @@ def parse_command(transcript: str, procedure_type: str) -> Dict[str, Any]:
                 "target": "dicom",
                 "data": {"seriesId": series_id}
             })
+        
+        # Image viewer commands
+        if "show" in transcript_lower and ("image" in transcript_lower or "images" in transcript_lower) and "medical" not in transcript_lower:
+            display_commands.append({
+                "action": "show",
+                "target": "images"
+            })
     
     if "zoom" in transcript_lower:
         # 3D model zoom (in / out / factor)
@@ -392,6 +399,19 @@ def parse_command(transcript: str, procedure_type: str) -> Dict[str, Any]:
                 "target": "3d",
                 "data": {"zoom_level": zoom_level}
             })
+        
+        # Image viewer zoom commands
+        elif "image" in transcript_lower or "images" in transcript_lower:
+            action = "in"  # default
+            if "zoom out" in transcript_lower or "out" in transcript_lower:
+                action = "out"
+            elif "reset" in transcript_lower:
+                action = "reset"
+            display_commands.append({
+                "action": "zoom",
+                "target": "images",
+                "data": {"action": action}
+            })
     
     if "reset" in transcript_lower and ("view" in transcript_lower or "3d" in transcript_lower):
         display_commands.append({
@@ -400,16 +420,29 @@ def parse_command(transcript: str, procedure_type: str) -> Dict[str, Any]:
         })
     
     # DICOM navigation commands
-    if "next" in transcript_lower and ("image" in transcript_lower or "slice" in transcript_lower):
+    if "next" in transcript_lower and ("image" in transcript_lower or "slice" in transcript_lower) and "medical" in transcript_lower:
         display_commands.append({
             "action": "next",
             "target": "dicom"
         })
     
-    if "previous" in transcript_lower and ("image" in transcript_lower or "slice" in transcript_lower):
+    if "previous" in transcript_lower and ("image" in transcript_lower or "slice" in transcript_lower) and "medical" in transcript_lower:
         display_commands.append({
             "action": "previous", 
             "target": "dicom"
+        })
+    
+    # Image viewer navigation commands
+    if "next" in transcript_lower and ("image" in transcript_lower or "images" in transcript_lower) and "medical" not in transcript_lower:
+        display_commands.append({
+            "action": "next",
+            "target": "images"
+        })
+    
+    if "previous" in transcript_lower and ("image" in transcript_lower or "images" in transcript_lower) and "medical" not in transcript_lower:
+        display_commands.append({
+            "action": "previous", 
+            "target": "images"
         })
     
     # New: rotate 3D model left / right
@@ -1023,6 +1056,46 @@ async def list_dicom_series():
         series_list = ["general"]
     
     return {"series": series_list}
+
+@app.get("/images/{filename}")
+async def get_image_file(filename: str):
+    """Serve PNG images for image viewer"""
+    data_dir = os.path.join(os.path.dirname(__file__), "data", "image-data")
+    file_path = os.path.join(data_dir, filename)
+    
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Image file not found")
+    
+    # Validate file extension
+    if not filename.lower().endswith('.png'):
+        raise HTTPException(status_code=400, detail="Invalid image file type")
+    
+    return FileResponse(
+        file_path,
+        media_type="image/png",
+        headers={"Content-Disposition": f"inline; filename={filename}"}
+    )
+
+@app.get("/images")
+async def list_image_files():
+    """List available PNG images"""
+    data_dir = os.path.join(os.path.dirname(__file__), "data", "image-data")
+    
+    if not os.path.exists(data_dir):
+        return {"files": []}
+    
+    png_files = []
+    for file in os.listdir(data_dir):
+        if file.lower().endswith('.png'):
+            png_files.append(file)
+    
+    # Sort files numerically
+    try:
+        png_files.sort(key=lambda x: int(''.join(filter(str.isdigit, x))))
+    except:
+        png_files.sort()
+    
+    return {"files": png_files}
 
 # Transcription session endpoints
 @app.post("/transcription/start")

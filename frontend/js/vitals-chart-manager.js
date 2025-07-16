@@ -165,6 +165,35 @@ export class VitalsChartManager
 
         console.log('Vitals chart initialized');
     }
+    
+    /**
+     * Initialize chart in a specific cell
+     */
+    initializeInCell(cellContent) {
+        console.log('Initializing vitals chart in cell:', cellContent);
+        
+        const chartCanvas = cellContent.querySelector('#vitalsChart');
+        if (!chartCanvas) {
+            console.error('Chart canvas not found in cell');
+            return;
+        }
+        
+        // If chart already exists, destroy it first
+        if (this.vitalsChart) {
+            this.vitalsChart.destroy();
+        }
+        
+        // Update canvas reference
+        this.chartCanvas = chartCanvas;
+        
+        // Reinitialize the chart
+        this.initializeChart();
+        
+        // Start real-time updates
+        this.startRealTimeUpdates();
+        
+        console.log('Vitals chart initialized in cell successfully');
+    }
 
     /**
      * Update status indicators

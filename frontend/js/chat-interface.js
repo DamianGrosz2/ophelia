@@ -34,9 +34,10 @@ export class ChatInterface
     {
         console.log('🎯 ChatInterface: Looking for DOM elements...');
 
-        this.chatHistory = document.getElementById('chat-history');
-        this.textInput = document.getElementById('text-input');
-        this.sendBtn = document.getElementById('send-btn');
+        // Find the VISIBLE chat history element, not the hidden template
+        this.chatHistory = this.findVisibleChatHistory();
+        this.textInput = this.findVisibleTextInput();
+        this.sendBtn = this.findVisibleSendButton();
         this.ttsAudio = document.getElementById('tts-audio');
         this.stopAudioBtn = document.getElementById('stop-audio-btn');
         this.speedButtons = {
@@ -54,12 +55,6 @@ export class ChatInterface
         if (!this.chatHistory || !this.textInput || !this.sendBtn)
         {
             console.error('ChatInterface: Required DOM elements not found');
-            console.log('🎯 Available elements with these IDs:');
-            ['chat-history', 'text-input', 'send-btn', 'tts-audio'].forEach(id =>
-            {
-                const el = document.getElementById(id);
-                console.log(`  - ${id}:`, el ? `Found (${el.style.display}, ${el.style.visibility})` : 'Not found');
-            });
             this.alertManager?.showWarning('Chat interface not available');
         }
 
@@ -71,26 +66,93 @@ export class ChatInterface
     }
 
     /**
+     * Find the visible chat history element (not the hidden template)
+     */
+    findVisibleChatHistory()
+    {
+        const chatHistoryElements = document.querySelectorAll('#chat-history');
+        
+        for (let element of chatHistoryElements)
+        {
+            const styles = window.getComputedStyle(element);
+            if (styles.display !== 'none' && styles.visibility !== 'hidden')
+            {
+                console.log('🎯 Found visible chat history element:', element);
+                return element;
+            }
+        }
+        
+        console.log('🎯 No visible chat history found, using first element');
+        return chatHistoryElements[0] || null;
+    }
+
+    /**
+     * Find the visible text input element
+     */
+    findVisibleTextInput()
+    {
+        const textInputElements = document.querySelectorAll('#text-input');
+        
+        for (let element of textInputElements)
+        {
+            const styles = window.getComputedStyle(element);
+            if (styles.display !== 'none' && styles.visibility !== 'hidden')
+            {
+                console.log('🎯 Found visible text input element:', element);
+                return element;
+            }
+        }
+        
+        console.log('🎯 No visible text input found, using first element');
+        return textInputElements[0] || null;
+    }
+
+    /**
+     * Find the visible send button element
+     */
+    findVisibleSendButton()
+    {
+        const sendButtonElements = document.querySelectorAll('#send-btn');
+        
+        for (let element of sendButtonElements)
+        {
+            const styles = window.getComputedStyle(element);
+            if (styles.display !== 'none' && styles.visibility !== 'hidden')
+            {
+                console.log('🎯 Found visible send button element:', element);
+                return element;
+            }
+        }
+        
+        console.log('🎯 No visible send button found, using first element');
+        return sendButtonElements[0] || null;
+    }
+
+    /**
      * Setup event listeners
      */
     setupEventListeners()
     {
-        if (this.sendBtn)
-        {
-            this.sendBtn.addEventListener('click', () => this.sendTextMessage());
-        }
+        // Use event delegation to handle clicks on any visible send button
+        document.addEventListener('click', (e) => {
+            if (e.target && e.target.id === 'send-btn') {
+                const visibleSendBtn = this.findVisibleSendButton();
+                if (e.target === visibleSendBtn) {
+                    this.sendTextMessage();
+                }
+            }
+        });
 
-        if (this.textInput)
-        {
-            this.textInput.addEventListener('keypress', (e) =>
-            {
-                if (e.key === 'Enter' && !e.shiftKey)
-                {
+        // Use event delegation to handle enter key on any visible text input
+        document.addEventListener('keypress', (e) => {
+            if (e.target && e.target.id === 'text-input') {
+                const visibleTextInput = this.findVisibleTextInput();
+                if (e.target === visibleTextInput && e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
                     this.sendTextMessage();
                 }
-            });
-        }
+            }
+        });
 
         if (this.stopAudioBtn)
         {
@@ -132,7 +194,15 @@ export class ChatInterface
      */
     addMessage(sender, message, source = 'System')
     {
-        if (!this.chatHistory) return;
+        // Always find the current visible chat history element
+        const currentChatHistory = this.findVisibleChatHistory();
+        
+        if (!currentChatHistory) {
+            console.error('🎯 No visible chat history found when adding message');
+            return;
+        }
+
+        console.log('🎯 Adding message to chat history:', currentChatHistory);
 
         const messageDiv = document.createElement('div');
         messageDiv.className = `chat-message ${sender}`;
@@ -147,8 +217,15 @@ export class ChatInterface
             </div>
         `;
 
-        this.chatHistory.appendChild(messageDiv);
-        this.scrollToBottom();
+        currentChatHistory.appendChild(messageDiv);
+        
+        // Update the stored reference to the current visible element
+        this.chatHistory = currentChatHistory;
+        
+        // Force scroll to bottom on the current visible element
+        currentChatHistory.scrollTop = currentChatHistory.scrollHeight;
+        
+        console.log('🎯 Message added to visible chat history');
     }
 
     /**
@@ -156,6 +233,8 @@ export class ChatInterface
      */
     addUserMessage(message, source = 'Text')
     {
+        console.log('🎯 addUserMessage called with:', { message, source });
+        console.log('🎯 Stack trace:', new Error().stack);
         this.addMessage('user', message, source);
     }
 
@@ -172,10 +251,18 @@ export class ChatInterface
      */
     async sendTextMessage()
     {
-        if (!this.textInput || !this.sendBtn) return;
+        // Always find the current visible elements
+        const currentTextInput = this.findVisibleTextInput();
+        const currentSendBtn = this.findVisibleSendButton();
+        
+        if (!currentTextInput || !currentSendBtn) return;
 
-        const message = this.textInput.value.trim();
+        const message = currentTextInput.value.trim();
         if (!message) return;
+
+        // Update references to current visible elements
+        this.textInput = currentTextInput;
+        this.sendBtn = currentSendBtn;
 
         // Disable send button temporarily
         this.setSendButtonState(false, 'Sending...');
@@ -186,7 +273,7 @@ export class ChatInterface
             this.addUserMessage(message, 'Text');
 
             // Clear input
-            this.textInput.value = '';
+            currentTextInput.value = '';
 
             // Trigger callback if set
             if (this.onMessageSent)
@@ -225,6 +312,83 @@ export class ChatInterface
         if (this.chatHistory)
         {
             this.chatHistory.scrollTop = this.chatHistory.scrollHeight;
+        }
+    }
+
+    /**
+     * Force a visual update to ensure DOM changes are reflected
+     */
+    forceVisualUpdate()
+    {
+        if (this.chatHistory)
+        {
+            // Multiple approaches to force a complete re-render
+            
+            // 1. Force a reflow by accessing layout properties
+            this.chatHistory.offsetHeight;
+            this.chatHistory.scrollHeight;
+            
+            // 2. Force a repaint by modifying display style
+            const originalDisplay = this.chatHistory.style.display;
+            this.chatHistory.style.display = 'none';
+            this.chatHistory.offsetHeight; // Force reflow
+            this.chatHistory.style.display = originalDisplay || 'block';
+            
+            // 3. Trigger resize event to force updates
+            window.dispatchEvent(new Event('resize'));
+            
+            // 4. Force repaint with transform
+            const originalTransform = this.chatHistory.style.transform;
+            this.chatHistory.style.transform = 'translateZ(0)';
+            
+            // Use multiple requestAnimationFrame to ensure everything processes
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    this.chatHistory.style.transform = originalTransform;
+                    
+                    // Force scroll update
+                    this.scrollToBottom();
+                    
+                    // Trigger custom events that might be listened to
+                    this.chatHistory.dispatchEvent(new CustomEvent('chatUpdated'));
+                    document.dispatchEvent(new CustomEvent('chatMessageAdded'));
+                });
+            });
+        }
+    }
+
+    /**
+     * Trigger targeted chat UI refresh
+     */
+    triggerUIRefresh()
+    {
+        // Target only the chat history container for refresh
+        if (this.chatHistory)
+        {
+            // Force a targeted update of just the chat history
+            const parent = this.chatHistory.parentElement;
+            if (parent)
+            {
+                // Store the current innerHTML
+                const currentHTML = this.chatHistory.innerHTML;
+                
+                // Force re-render by briefly removing and re-adding
+                const nextSibling = this.chatHistory.nextSibling;
+                parent.removeChild(this.chatHistory);
+                
+                // Force a reflow
+                parent.offsetHeight;
+                
+                // Re-add the element
+                if (nextSibling) {
+                    parent.insertBefore(this.chatHistory, nextSibling);
+                } else {
+                    parent.appendChild(this.chatHistory);
+                }
+                
+                // Ensure content is still there
+                this.chatHistory.innerHTML = currentHTML;
+            }
         }
     }
 

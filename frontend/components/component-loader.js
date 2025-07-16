@@ -97,6 +97,7 @@ class ComponentLoader
             { name: 'voice-interface', target: 'body', append: true },
             { name: 'monitoring-panel', target: 'body', append: true },
             { name: 'vtk-viewer', target: 'body', append: true },
+            { name: 'image-viewer', target: 'body', append: true },
             { name: 'dicom-viewer', target: 'body', append: true }
         ];
 
@@ -137,7 +138,8 @@ class ComponentLoader
             'panel-2': 'voice-interface',
             'panel-3': 'monitoring-panel',
             'panel-4': 'vtk-viewer',
-            'panel-5': 'dicom-viewer'
+            'panel-5': 'dicom-viewer',
+            'panel-6': 'image-viewer'
         };
 
         Object.entries(idMappings).forEach(([oldId, newId]) =>

@@ -18,9 +18,10 @@ import * as cornerstoneWebImageLoader from 'cornerstone-web-image-loader';
 import * as dicomParser from 'dicom-parser';
 import * as cornerstoneWADOImageLoader from 'cornerstone-wado-image-loader';
 
-// Import DicomViewer and VtkViewer (existing classes)
+// Import DicomViewer, VtkViewer, and ImageViewer (existing classes)
 import { DicomViewer } from '../dicom-viewer.js';
 import { VtkViewer } from '../vtk-viewer.js';
+import { ImageViewer } from '../image-viewer.js';
 
 // Import our new modular components
 import { ApiClient } from './api-client.js';
@@ -32,6 +33,10 @@ import { PatientDisplayRenderer } from './patient-display-renderer.js';
 import { VitalsChartManager } from './vitals-chart-manager.js';
 import { SurgicalGridManager } from './surgical-grid-manager.js';
 import { TranscriptionManager } from './transcription-manager.js';
+
+// Backend API base URL
+const API_BASE_URL = window.API_BASE_URL || (import.meta.env?.VITE_API_URL || 'http://localhost:8000');
+window.API_BASE_URL = API_BASE_URL;
 
 /**
  * Initialize Cornerstone libraries globally
@@ -159,6 +164,7 @@ class ORVoiceAssistant
         this.procedureManager = new ProcedureManager(this.apiClient, this.alertManager);
         this.patientDisplay = new PatientDisplayRenderer(this.alertManager);
         this.vitalsChart = new VitalsChartManager(this.alertManager);
+        window.vitalsChartManager = this.vitalsChart;
         this.transcriptionManager = new TranscriptionManager(this.apiClient, this.alertManager);
 
         // Reinitialize transcription manager UI after all components are loaded
@@ -209,8 +215,9 @@ class ORVoiceAssistant
         // Voice recording -> Chat
         this.voiceRecorder.onTranscription((transcribeResult) =>
         {
-            this.chatInterface.addUserMessage(transcribeResult.transcript, 'Voice');
-            this.processCommand(transcribeResult.transcript);
+            const transcript = transcribeResult.transcript || transcribeResult;
+            this.chatInterface.addUserMessage(transcript, 'Voice');
+            this.processCommand(transcript);
         });
 
         // Text messages -> Command processing
@@ -376,6 +383,9 @@ class ORVoiceAssistant
             setTimeout(checkForVtkViewer, 100);
         }
 
+        // Initialize Image viewer
+        this.initializeImageViewer();
+
         // Initialize DICOM viewer
         const dicomPanelContainer = document.getElementById('dicom-viewer');
         if (dicomPanelContainer)
@@ -391,6 +401,51 @@ class ORVoiceAssistant
         }
 
         console.log('External viewers initialized');
+    }
+
+    /**
+     * Initialize Image viewer
+     */
+    initializeImageViewer()
+    {
+        // Use the Image viewer instance created by SurgicalGridManager instead of creating a duplicate
+        // Wait for the surgical grid to initialize the Image viewer
+        const checkForImageViewer = () =>
+        {
+            if (window.activeImageViewer)
+            {
+                this.imageViewer = window.activeImageViewer;
+                console.log('🎯 Using SurgicalGridManager Image viewer instance:', this.imageViewer);
+            } else
+            {
+                // If surgical grid hasn't created it yet, create our own as fallback
+                const imageContainer = document.querySelector('.image-viewer-container');
+                if (imageContainer)
+                {
+                    this.imageViewer = new ImageViewer(
+                        imageContainer,
+                        (message, level) => this.alertManager.showAlert(message, level)
+                    );
+                    // Set as global reference if none exists
+                    if (!window.activeImageViewer)
+                    {
+                        window.activeImageViewer = this.imageViewer;
+                    }
+                    console.log('🎯 Created fallback Image viewer instance:', this.imageViewer);
+                } else
+                {
+                    console.error("Image viewer container not found");
+                    this.alertManager.showCritical("Could not initialize Image viewer: container not found.");
+                }
+            }
+        };
+
+        // Check immediately, and if not available, wait a bit for surgical grid
+        checkForImageViewer();
+        if (!this.imageViewer)
+        {
+            setTimeout(checkForImageViewer, 100);
+        }
     }
 
     /**
@@ -673,6 +728,30 @@ class ORVoiceAssistant
                             console.error('❌ No VtkViewer available for zoom command');
                             this.alertManager.showWarning('3D viewer not available');
                         }
+                    } else if (command.target === 'images')
+                    {
+                        const imageViewer = this.imageViewer || window.activeImageViewer;
+                        if (imageViewer)
+                        {
+                            const action = command.data?.action || 'in';
+                            if (action === 'in')
+                            {
+                                imageViewer.zoomIn();
+                                this.alertManager.showInfo('Zooming image in');
+                            } else if (action === 'out')
+                            {
+                                imageViewer.zoomOut();
+                                this.alertManager.showInfo('Zooming image out');
+                            } else if (action === 'reset')
+                            {
+                                imageViewer.resetZoom();
+                                this.alertManager.showInfo('Reset image zoom');
+                            }
+                        } else
+                        {
+                            console.error('❌ No ImageViewer available for zoom command');
+                            this.alertManager.showWarning('Image viewer not available');
+                        }
                     }
                     break;
 
@@ -708,6 +787,38 @@ class ORVoiceAssistant
                         {
                             console.error('❌ No VtkViewer available for reset command');
                             this.alertManager.showWarning('3D viewer not available');
+                        }
+                    }
+                    break;
+
+                case 'next':
+                    if (command.target === 'images')
+                    {
+                        const imageViewer = this.imageViewer || window.activeImageViewer;
+                        if (imageViewer)
+                        {
+                            imageViewer.nextImage();
+                            this.alertManager.showInfo('Next image');
+                        } else
+                        {
+                            console.error('❌ No ImageViewer available for next command');
+                            this.alertManager.showWarning('Image viewer not available');
+                        }
+                    }
+                    break;
+
+                case 'previous':
+                    if (command.target === 'images')
+                    {
+                        const imageViewer = this.imageViewer || window.activeImageViewer;
+                        if (imageViewer)
+                        {
+                            imageViewer.previousImage();
+                            this.alertManager.showInfo('Previous image');
+                        } else
+                        {
+                            console.error('❌ No ImageViewer available for previous command');
+                            this.alertManager.showWarning('Image viewer not available');
                         }
                     }
                     break;

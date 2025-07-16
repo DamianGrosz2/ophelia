@@ -586,15 +586,9 @@ export class VtkViewer
         }
 
         const success = await this.loadVtkFile(selectedFile);
-        if (this.onAlert)
+        if (this.onAlert && !success)
         {
-            if (success)
-            {
-                this.onAlert(`Loaded VTK file: ${selectedFile}`, 'info');
-            } else
-            {
-                this.onAlert(`Failed to load VTK file: ${selectedFile}`, 'warning');
-            }
+            this.onAlert(`Failed to load VTK file: ${selectedFile}`, 'warning');
         }
         return success;
     }
